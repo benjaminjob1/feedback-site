@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [step, setStep] = useState<"form" | "confirming">("form");
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -23,23 +23,25 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
-      password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
     } else if (data.user) {
-      // Auto-set admin role for Ben's email via admin client
+      // Auto-set admin role for Ben's email
       if (email.toLowerCase() === BEN_EMAIL.toLowerCase()) {
         try {
           await supabase.from("profiles").upsert({
             id: data.user.id,
             email: email,
-            full_name: fullName,
+            full_name: fullName || "Ben",
             role: "admin",
             email_verified: true,
           });
@@ -57,12 +59,16 @@ export default function SignupPage() {
       <div className="container mx-auto px-4 py-16 max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Check your email</CardTitle>
+            <CardTitle className="text-2xl">📧 Check your email</CardTitle>
             <CardDescription>
-              We&apos;ve sent a confirmation link to your email address. Click it to verify your account and then sign in.
+              We&apos;ve sent a confirmation link to <strong>{email}</strong>.
+              <br />Click the link to verify your account — then you can sign in.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
+          <CardContent className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Didn&apos;t get the email? Check your spam folder.
+            </p>
             <Link href="/login">
               <Button variant="outline">Go to Login</Button>
             </Link>
@@ -76,8 +82,8 @@ export default function SignupPage() {
     <div className="container mx-auto px-4 py-16 max-w-md">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>Join the feedback community</CardDescription>
+          <CardTitle className="text-2xl">Join Feedback Portal</CardTitle>
+          <CardDescription>Enter your email to create an account — no password needed</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
@@ -94,7 +100,6 @@ export default function SignupPage() {
                 placeholder="Your name"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                required
               />
             </div>
             <div className="space-y-2">
@@ -108,19 +113,8 @@ export default function SignupPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                minLength={6}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Sign Up"}
+              {loading ? "Sending link..." : "Send confirmation email"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">

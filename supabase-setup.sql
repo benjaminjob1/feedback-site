@@ -195,3 +195,21 @@ CREATE INDEX IF NOT EXISTS idx_feedback_submitted_by ON public.feedback(submitte
 CREATE INDEX IF NOT EXISTS idx_feedback_views_user ON public.feedback_views(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+
+-- =============================================
+-- TRIGGER: Auto-set email_verified on auth confirmation
+-- =============================================
+CREATE OR REPLACE FUNCTION public.handle_new_user_confirmation()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.confirmed_at IS NOT NULL THEN
+    UPDATE public.profiles SET email_verified = TRUE WHERE id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+CREATE TRIGGER on_auth_user_confirmed
+  AFTER UPDATE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_confirmation();
