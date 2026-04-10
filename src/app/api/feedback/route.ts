@@ -1,25 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { BEN_EMAIL } from "@/lib/supabase";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function adminClient() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const isPublic = searchParams.get("public") === "true";
-  const { data: { user } } = await createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ).auth.getUser();
+  const { data: { user } } = await supabaseAdmin.auth.getUser();
 
-  const client = adminClient();
+  const client = supabaseAdmin;
 
   // Auto-create profile if missing
   if (user) {
@@ -58,16 +46,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { data: { user }, error: authError } = await createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ).auth.getUser();
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const profileRes = await adminClient()
+  const profileRes = await supabaseAdmin
     .from("profiles")
     .select("role, email_verified")
     .eq("id", user.id)
@@ -84,7 +69,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Site and rating are required" }, { status: 400 });
   }
 
-  const { data, error } = await adminClient()
+  const { data, error } = await supabaseAdmin
     .from("feedback")
     .insert({
       site,

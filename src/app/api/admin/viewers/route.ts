@@ -1,58 +1,55 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { BEN_EMAIL } from "@/lib/supabase";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+export async function GET(req: NextRequest) {
+  const { data: { user } } = await supabaseAdmin.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-function adminClient() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
-export async function POST(req: NextRequest) {
-  const { data: { user } } = await createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ).auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const client = adminClient();
-  const profileRes = await client.from("profiles").select("role").eq("id", user.id).single();
-  if (profileRes.data?.role !== "admin") {
+  const callerProfile = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
+  if (callerProfile.data?.role !== "admin") {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
 
-  const body = await req.json();
-  const { email } = body;
+  const { data, error } = await supabaseAdmin
+    .from("feedback_views")
+    .select("*, profiles(full_name, email)")
+    .order("created_at", { ascending: true });
 
-  if (!email) {
-    return NextResponse.json({ error: "Email required" }, { status: 400 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ views: data });
+}
+
+export async function POST(req: NextRequest) {
+  const { data: { user } } = await supabaseAdmin.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const callerProfile = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
+  if (callerProfile.data?.role !== "admin") {
+    return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
 
-  if (email.toLowerCase() === BEN_EMAIL.toLowerCase()) {
-    return NextResponse.json({ error: "Cannot add Ben as viewer" }, { status: 400 });
-  }
+  const { email } = await req.json();
+  if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
-  // Find user by email in profiles
-  const existingRes = await client
+  const targetUser = await supabaseAdmin
     .from("profiles")
-    .select("*")
-    .eq("email", email)
+    .select("id, email_verified")
+    .eq("email", email.toLowerCase())
     .single();
 
-  if (existingRes.data) {
-    const { error } = await client
-      .from("profiles")
-      .update({ role: "viewer" })
-      .eq("id", existingRes.data.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ user: { ...existingRes.data, role: "viewer" } });
-  }
+  if (!targetUser.data) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  return NextResponse.json({ error: "No user found with that email. They must sign up first." }, { status: 404 });
+  const { data, error } = await supabaseAdmin
+    .from("feedback_views")
+    .upsert({
+      user_id: targetUser.data.id,
+      can_view_pending: true,
+    }, { onConflict: "user_id" })
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ view: data });
 }

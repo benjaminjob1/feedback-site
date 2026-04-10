@@ -1,50 +1,30 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { BEN_EMAIL } from "@/lib/supabase";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function adminClient() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { data: { user } } = await createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ).auth.getUser();
+  const { data: { user } } = await supabaseAdmin.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const client = adminClient();
-  const profileRes = await client.from("profiles").select("role").eq("id", user.id).single();
-  if (profileRes.data?.role !== "admin") {
+  const callerProfile = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
+  if (callerProfile.data?.role !== "admin") {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
-  }
-
-  const targetRes = await client.from("profiles").select("email").eq("id", params.id).single();
-  if (targetRes.data?.email?.toLowerCase() === BEN_EMAIL.toLowerCase()) {
-    return NextResponse.json({ error: "Cannot modify Ben's role" }, { status: 403 });
   }
 
   const body = await req.json();
   const { role } = body;
 
-  if (!["user", "viewer"].includes(role)) {
+  if (!["admin", "user", "viewer"].includes(role)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
 
-  const { error } = await client
+  const { data, error } = await supabaseAdmin
     .from("profiles")
-    .update({ role })
-    .eq("id", params.id);
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", params.id)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ user: data });
 }
