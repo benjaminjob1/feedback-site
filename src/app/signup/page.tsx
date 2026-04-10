@@ -36,12 +36,8 @@ export default function SignupPage() {
       // Auto-set admin role for Ben's email via admin client
       if (email.toLowerCase() === BEN_EMAIL.toLowerCase()) {
         try {
-          const { createClient } = await import("@supabase/supabase-js");
-          const adminClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-          );
-          await adminClient.from("profiles").upsert({
+          const { supabaseAdmin } = await import("@/lib/supabase");
+          await supabaseAdmin.from("profiles").upsert({
             id: data.user.id,
             email: email,
             full_name: fullName,
