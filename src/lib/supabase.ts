@@ -1,16 +1,13 @@
-// v2 - hardcoded keys for build fix
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co"; // PUBLIC - safe to commit
-const supabaseAnonKey = "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI"; // PUBLIC - safe to commit
+const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co";
+const supabaseAnonKey = "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+export const BEN_EMAIL = "benjamin.job@gwern.co.uk";
 export const SITES = [
   { value: "hub", label: "Hub", emoji: "🖥️" },
   { value: "website", label: "Website", emoji: "🌐" },
@@ -20,7 +17,4 @@ export const SITES = [
   { value: "software", label: "Software", emoji: "💾" },
   { value: "railway", label: "Railway", emoji: "🚂" },
 ] as const;
-
 export type SiteValue = (typeof SITES)[number]["value"];
-
-export const BEN_EMAIL = "benjamin.job@gwern.co.uk";
