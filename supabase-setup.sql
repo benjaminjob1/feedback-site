@@ -45,6 +45,19 @@ CREATE TABLE IF NOT EXISTS public.feedback_views (
 );
 
 -- =============================================
+-- HELPER: is_admin_user() — avoids RLS recursion
+-- =============================================
+CREATE OR REPLACE FUNCTION public.is_admin_user()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =============================================
 -- TRIGGER: Auto-create profile on signup
 -- =============================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -108,12 +121,7 @@ CREATE POLICY "Users can update own profile"
 -- Admin can do anything with profiles
 CREATE POLICY "Admin can manage all profiles"
   ON public.profiles FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin_user());
 
 -- =============================================
 -- RLS POLICIES: feedback
@@ -139,12 +147,7 @@ CREATE POLICY "Users can read own pending feedback"
 -- Admin can read all feedback
 CREATE POLICY "Admin can read all feedback"
   ON public.feedback FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin_user());
 
 -- Authenticated + verified users can insert feedback
 CREATE POLICY "Verified users can insert feedback"
@@ -160,12 +163,7 @@ CREATE POLICY "Verified users can insert feedback"
 -- Admin can update feedback status
 CREATE POLICY "Admin can update feedback status"
   ON public.feedback FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin_user());
 
 -- =============================================
 -- RLS POLICIES: feedback_views
@@ -177,14 +175,9 @@ CREATE POLICY "Users can view own view preferences"
   USING (user_id = auth.uid());
 
 -- Admin can manage all view preferences
-CREATE POLICY "Admin can manage view preferences"
+CREATE POLICY "Admin can manage all view preferences"
   ON public.feedback_views FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin_user());
 
 -- =============================================
 -- INDEXES
@@ -210,6 +203,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
-CREATE TRIGGER on_auth_user_confirmed
+CREATE OR REPLACE TRIGGER on_auth_user_confirmed
   AFTER UPDATE ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_confirmation();
