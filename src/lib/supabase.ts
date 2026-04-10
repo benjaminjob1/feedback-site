@@ -1,3 +1,4 @@
+// v2 - hardcoded keys for build fix
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co"; // PUBLIC - safe to commit
