@@ -22,6 +22,7 @@ type Feedback = {
   question_other: string;
   status: string;
   created_at: string;
+  submitted_by: string;
   profiles: { full_name: string; email: string } | null;
 };
 
