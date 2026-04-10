@@ -3,6 +3,7 @@ import "./globals.css";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Feedback Portal",
@@ -42,6 +43,7 @@ export default function RootLayout({
           </div>
         </nav>
         {children}
+        <Analytics />
       </body>
     </html>
   );
