@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase, BEN_EMAIL } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,22 +13,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithOtp({
+    const { error: otpError } = await (supabase.auth as any).signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
-    if (signInError) {
-      setError(signInError.message);
+    if (otpError) {
+      setError(otpError.message);
       setLoading(false);
     } else {
       setSent(true);

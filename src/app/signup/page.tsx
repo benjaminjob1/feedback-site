@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabase, BEN_EMAIL } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,47 +13,50 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [step, setStep] = useState<"form" | "confirming">("form");
-  const router = useRouter();
+  const [sent, setSent] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    // signInWithOtp works for both new signups and existing users
+    const { error: otpError } = await (supabase.auth as any).signInWithOtp({
       email,
       options: {
-        data: { full_name: fullName },
+        shouldCreateUser: true,
         emailRedirectTo: `${window.location.origin}/login`,
+        data: { full_name: fullName },
       },
     });
 
-    if (signUpError) {
-      setError(signUpError.message);
+    if (otpError) {
+      setError(otpError.message);
       setLoading(false);
-    } else if (data.user) {
-      // Auto-set admin role for Ben's email
+    } else {
+      // Auto-set admin role immediately
       if (email.toLowerCase() === BEN_EMAIL.toLowerCase()) {
         try {
-          await supabase.from("profiles").upsert({
-            id: data.user.id,
-            email: email,
-            full_name: fullName || "Ben",
-            role: "admin",
-            email_verified: true,
-          });
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("profiles").upsert({
+              id: user.id,
+              email: email,
+              full_name: fullName || "Ben",
+              role: "admin",
+              email_verified: true,
+            });
+          }
         } catch (e) {
           console.error("Failed to set admin role:", e);
         }
       }
-      setSuccess(true);
+      setSent(true);
       setLoading(false);
     }
   };
 
-  if (success) {
+  if (sent) {
     return (
       <div className="container mx-auto px-4 py-16 max-w-md">
         <Card>
