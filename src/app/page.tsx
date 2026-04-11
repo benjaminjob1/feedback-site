@@ -43,21 +43,21 @@ export default function HomePage() {
   const fetchFeedback = useCallback(async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (authUser) {
-      const res = await fetch("/api/feedback");
-      const data = await res.json();
-      setFeedbackList(data.feedback || []);
-      
-      const profileRes = await fetch("/api/admin/users");
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
-        const myProfile = profileData.users?.find((u: User) => u.id === authUser.id);
-        setUser(myProfile || { id: authUser.id, email: authUser.email || "", full_name: "", role: "user", email_verified: false });
-      }
-    } else {
-      const res = await fetch("/api/feedback?public=true");
-      const data = await res.json();
-      setFeedbackList(data.feedback || []);
+    if (!authUser) {
+      setFeedbackList([]);
+      setLoading(false);
+      return;
+    }
+    
+    const res = await fetch("/api/feedback");
+    const data = await res.json();
+    setFeedbackList(data.feedback || []);
+    
+    const profileRes = await fetch("/api/admin/users");
+    if (profileRes.ok) {
+      const profileData = await profileRes.json();
+      const myProfile = profileData.users?.find((u: User) => u.id === authUser.id);
+      setUser(myProfile || { id: authUser.id, email: authUser.email || "", full_name: "", role: "user", email_verified: false });
     }
     setLoading(false);
   }, []);
@@ -127,6 +127,14 @@ export default function HomePage() {
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
+      ) : !user ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Please sign in to view feedback.</p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Link href="/login"><Button variant="outline">Login</Button></Link>
+            <Link href="/signup"><Button>Sign Up</Button></Link>
+          </div>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No feedback yet. Be the first!</p>
