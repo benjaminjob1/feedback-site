@@ -95,10 +95,7 @@ export default function HomePage() {
         </div>
         <div className="flex gap-2">
           {!user ? (
-            <>
-              <Link href="/login"><Button variant="outline">Login</Button></Link>
-              <Link href="/signup"><Button>Sign Up</Button></Link>
-            </>
+            <Link href="/login"><Button>Sign In</Button></Link>
           ) : (
             <Link href="/submit"><Button>Submit Feedback</Button></Link>
           )}
