@@ -1,48 +1,42 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
-import { BEN_EMAIL } from "@/lib/supabase-admin";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const isPublic = searchParams.get("public") === "true";
   const { data: { user } } = await supabaseAdmin.auth.getUser();
 
-  const client = supabaseAdmin;
-
-  // Auto-create profile if missing
-  if (user) {
-    await client.from("profiles").upsert({
-      id: user.id,
-      email: user.email,
-      role: user.email?.toLowerCase() === BEN_EMAIL.toLowerCase() ? "admin" : "user",
-    }, { onConflict: "id" });
+  if (!user) {
+    return NextResponse.json({ error: "Login required" }, { status: 401 });
   }
 
-  let query = client
+  // Check user role
+  const profileRes = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const role = profileRes.data?.role;
+
+  let query = supabaseAdmin
     .from("feedback")
     .select("*, profiles(full_name, email)")
     .order("created_at", { ascending: false });
 
-  if (isPublic) {
-    query = query.eq("status", "approved");
+  if (role === "admin") {
+    // Admins see everything
+    // no filter needed
+  } else if (role === "viewer") {
+    // Viewers see approved + their own pending
+    query = query.or(`status.eq.approved,submitted_by.eq.${user.id}`);
+  } else {
+    // Regular users see only their own pending
+    query = query.eq("submitted_by", user.id).eq("status", "pending");
   }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Filter for non-admin users
-  let feedback = data || [];
-  if (user) {
-    const profileRes = await client.from("profiles").select("role").eq("id", user.id).single();
-    const role = profileRes.data?.role;
-    if (role !== "admin") {
-      feedback = feedback.filter((f: any) => f.status === "approved" || f.submitted_by === user.id);
-    }
-  } else {
-    feedback = feedback.filter((f: any) => f.status === "approved");
-  }
-
-  return NextResponse.json({ feedback });
+  return NextResponse.json({ feedback: data || [] });
 }
 
 export async function POST(req: NextRequest) {
