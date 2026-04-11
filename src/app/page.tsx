@@ -105,7 +105,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Filter pills */}
+      {/* Only show filter pills when logged in */}
+      {user && (
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setFilter("all")}
@@ -124,6 +125,7 @@ export default function HomePage() {
           </button>
         ))}
       </div>
+      )}
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
