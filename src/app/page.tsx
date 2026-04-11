@@ -132,10 +132,6 @@ export default function HomePage() {
       ) : !user ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Please sign in to view feedback.</p>
-          <div className="flex gap-2 justify-center mt-4">
-            <Link href="/login"><Button variant="outline">Login</Button></Link>
-            <Link href="/signup"><Button>Sign Up</Button></Link>
-          </div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
