@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { supabase } from "@/lib/supabase";
@@ -5,16 +7,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 
-export const metadata: Metadata = {
-  title: "Feedback Portal",
-  description: "Share your feedback on Ben's projects",
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-background antialiased">
@@ -27,18 +34,15 @@ export default function RootLayout({
               <Link href="/" className="hover:text-primary transition-colors">
                 Browse
               </Link>
-              <Link
-                href="/submit"
-                className="hover:text-primary transition-colors"
-              >
-                Submit
-              </Link>
-              <Link
-                href="/login"
-                className="hover:text-primary transition-colors"
-              >
-                Login
-              </Link>
+              {user ? (
+                <Link href="/submit" className="hover:text-primary transition-colors">
+                  Submit
+                </Link>
+              ) : (
+                <Link href="/login" className="hover:text-primary transition-colors">
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         </nav>
