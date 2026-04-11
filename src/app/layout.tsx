@@ -2,7 +2,6 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
-import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
@@ -12,14 +11,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
+    fetch("/api/auth/session")
+      .then(res => res.json())
+      .then(data => { setUser(data.user); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
@@ -34,14 +33,16 @@ export default function RootLayout({
               <Link href="/" className="hover:text-primary transition-colors">
                 Browse
               </Link>
-              {user ? (
-                <Link href="/submit" className="hover:text-primary transition-colors">
-                  Submit
-                </Link>
-              ) : (
-                <Link href="/login" className="hover:text-primary transition-colors">
-                  Sign In
-                </Link>
+              {!loading && (
+                user ? (
+                  <Link href="/submit" className="hover:text-primary transition-colors">
+                    Submit
+                  </Link>
+                ) : (
+                  <Link href="/login" className="hover:text-primary transition-colors">
+                    Sign In
+                  </Link>
+                )
               )}
             </div>
           </div>

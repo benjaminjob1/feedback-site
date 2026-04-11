@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase, SITES, BEN_EMAIL } from "@/lib/supabase";
+
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, Clock, Users, Eye, Shield } from "lucide-react";
+import { SITES, BEN_EMAIL } from "@/lib/supabase";
 
 type Feedback = {
   id: string;
@@ -46,11 +47,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
+      const sessionRes = await fetch("/api/auth/session");
+      const { user: sessionUser } = await sessionRes.json();
+      if (!sessionUser || sessionUser.role !== "admin") {
         router.push("/login");
         return;
       }
+      
+      setUser(sessionUser as any);
       
       const profileRes = await fetch("/api/admin/users");
       if (!profileRes.ok) {
@@ -58,14 +62,6 @@ export default function AdminPage() {
         return;
       }
       const profileData = await profileRes.json();
-      const myProfile = profileData.users?.find((u: User) => u.id === authUser.id);
-      
-      if (!myProfile || myProfile.role !== "admin") {
-        router.push("/");
-        return;
-      }
-      
-      setUser(myProfile);
       setUsers(profileData.users || []);
       
       const fbRes = await fetch("/api/feedback");

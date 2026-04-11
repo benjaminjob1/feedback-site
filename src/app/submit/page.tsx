@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase, SITES } from "@/lib/supabase";
+import { SITES } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,19 +29,14 @@ export default function SubmitPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
+      const res = await fetch("/api/auth/session");
+      const { user: sessionUser } = await res.json();
+      if (!sessionUser) {
         router.push("/login");
         return;
       }
-      setUser(authUser);
-      
-      const res = await fetch("/api/admin/users");
-      if (res.ok) {
-        const data = await res.json();
-        const profile = data.users?.find((u: any) => u.id === authUser.id);
-        if (profile?.email_verified) setVerified(true);
-      }
+      setUser(sessionUser);
+      setVerified(true); // OTP verifies email access
     };
     checkUser();
   }, [router]);
