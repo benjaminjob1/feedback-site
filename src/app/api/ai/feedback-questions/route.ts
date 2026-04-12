@@ -43,10 +43,11 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       console.error("Anthropic error:", res.status, await res.text());
-      return NextResponse.json({ questions: [] });
+      return NextResponse.json({ error: "Anthropic API error", questions: [], status: res.status }, { status: 500 });
     }
 
     const data = await res.json();
+    console.error("Anthropic response:", JSON.stringify(data));
     const content: string = data.content?.[0]?.text?.trim() ?? "";
 
     const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/i, "");
@@ -65,6 +66,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     clearTimeout(timeout);
     console.error("AI feedback-questions error:", err);
-    return NextResponse.json({ questions: [] });
+    return NextResponse.json({ error: "Request failed", questions: [] });
   }
 }
