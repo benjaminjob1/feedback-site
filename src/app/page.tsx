@@ -41,7 +41,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   const fetchFeedback = useCallback(async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    // Check auth using our session API (works with magic link sessions)
+    const sessionRes = await fetch("/api/auth/session");
+    const sessionData = await sessionRes.json();
+    const authUser = sessionData.user;
     
     if (!authUser) {
       setFeedbackList([]);
@@ -49,23 +52,28 @@ export default function HomePage() {
       return;
     }
     
-    const res = await fetch("/api/feedback");
-    const data = await res.json();
-    setFeedbackList(data.feedback || []);
-    
+    // Also fetch user profile for role
     const profileRes = await fetch("/api/admin/users");
     if (profileRes.ok) {
       const profileData = await profileRes.json();
       const myProfile = profileData.users?.find((u: User) => u.id === authUser.id);
       setUser(myProfile || { id: authUser.id, email: authUser.email || "", full_name: "", role: "user", email_verified: false });
     }
+    
+    const res = await fetch("/api/feedback");
+    const data = await res.json();
+    setFeedbackList(data.feedback || []);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchFeedback();
+    // Re-fetch session when auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchFeedback();
+      fetch("/api/auth/session").then(res => res.json()).then(data => {
+        setUser(data.user || null);
+        fetchFeedback();
+      });
     });
     return () => subscription.unsubscribe();
   }, [fetchFeedback]);
