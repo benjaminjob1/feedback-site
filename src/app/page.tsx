@@ -141,7 +141,6 @@ export default function HomePage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No feedback yet. Be the first!</p>
-          <Link href="/submit" className="mt-4 inline-block"><Button>Submit Feedback</Button></Link>
         </div>
       ) : (
         <div className="space-y-4">

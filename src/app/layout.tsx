@@ -8,20 +8,18 @@ import { useRouter } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 
 function AuthHandler({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const url = new URL(window.location.href);
     const token = url.searchParams.get("t");
     if (token) {
-      // Set cookie from magic link token in URL
-      const maxAge = 60 * 60 * 24 * 7; // 7 days
+      const maxAge = 60 * 60 * 24 * 7;
       document.cookie = `fb_session=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
-      // Clean up URL without triggering re-render
       window.history.replaceState(null, "", window.location.pathname);
-      // Refresh user state
       setTimeout(() => {
         fetch("/api/auth/session")
           .then(res => res.json())
@@ -37,6 +35,13 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
       .catch(() => setLoading(false));
   }, []);
 
+  const handleSignOut = async () => {
+    await fetch("/api/auth/signout", { method: "POST" });
+    document.cookie = "fb_session=; path=/; max-age=0";
+    router.push("/");
+    setMenuOpen(false);
+  };
+
   return (
     <>
       <nav className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50">
@@ -50,9 +55,32 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
             </Link>
             {!loading && (
               user ? (
-                <Link href="/submit" className="hover:text-primary transition-colors">
-                  Submit
-                </Link>
+                <div className="relative">
+                  <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="hover:text-primary transition-colors flex items-center gap-1"
+                  >
+                    {user.user_metadata?.full_name || user.email?.split("@")[0]}
+                    <span className="text-xs">▾</span>
+                  </button>
+                  {menuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg py-1 z-50">
+                      <Link
+                        href="/account"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2 hover:bg-accent text-sm"
+                      >
+                        Account
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 hover:bg-accent text-sm text-destructive"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Link href="/login" className="hover:text-primary transition-colors">
                   Sign In
