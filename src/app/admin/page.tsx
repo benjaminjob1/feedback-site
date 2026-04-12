@@ -45,6 +45,9 @@ export default function AdminPage() {
   const [newUserRole, setNewUserRole] = useState<"viewer" | "admin">("viewer");
   const [addError, setAddError] = useState("");
   const [addSuccess, setAddSuccess] = useState("");
+  const [editingUserEmail, setEditingUserEmail] = useState<string | null>(null);
+  const [editingUserName, setEditingUserName] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -95,6 +98,21 @@ export default function AdminPage() {
     if (res.ok) {
       setUsers(prev => prev.map(u => u.email === userEmail ? { ...u, role } : u));
     }
+  };
+
+  const saveUserName = async () => {
+    if (!editingUserEmail) return;
+    setSavingName(true);
+    await fetch("/api/auth/update-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: editingUserEmail, full_name: editingUserName }),
+    });
+    setUsers(prev => prev.map(u =>
+      u.email === editingUserEmail ? { ...u, full_name: editingUserName } : u
+    ));
+    setEditingUserEmail(null);
+    setSavingName(false);
   };
 
   const addUser = async () => {
@@ -248,13 +266,33 @@ export default function AdminPage() {
               <Card key={u.id}>
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{u.full_name || "No name"}</p>
-                      <p className="text-sm text-muted-foreground">{u.email}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    </div>
+                    <div className="flex-1">
+                    {editingUserEmail === u.email ? (
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={editingUserName}
+                          onChange={e => setEditingUserName(e.target.value)}
+                          className="border border-border rounded px-2 py-1 text-sm bg-background w-36"
+                          autoFocus
+                        />
+                        <button onClick={saveUserName} disabled={savingName} className="text-xs text-primary hover:underline disabled:opacity-50">
+                          {savingName ? "Saving..." : "Save"}
+                        </button>
+                        <button onClick={() => setEditingUserEmail(null)} className="text-xs text-muted-foreground hover:underline">
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-medium">{u.full_name || "No name"}</p>
+                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </>
+                    )}
+                  </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={u.role === "admin" ? "default" : u.role === "viewer" ? "secondary" : "outline"}>
                         {u.role}
@@ -262,6 +300,14 @@ export default function AdminPage() {
                       {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() ? (
                         <span className="text-xs text-muted-foreground">Ben (you)</span>
                       ) : (
+                        <button
+                          onClick={() => { setEditingUserEmail(u.email); setEditingUserName(u.full_name || ""); }}
+                          className="text-xs text-muted-foreground hover:text-primary hover:underline mr-2"
+                        >
+                          Edit name
+                        </button>
+                      )}
+                      {(u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() || !BEN_EMAIL) && (
                         <div className="flex gap-2">
                           {u.role === "user" && (
                             <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>

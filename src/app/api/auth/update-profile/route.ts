@@ -10,22 +10,39 @@ export async function POST(req: NextRequest) {
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { full_name } = body;
+  const { email, full_name } = body;
+
+  // Which profile to update — admin can pass email, otherwise own profile
+  const targetEmail = email && email !== payload.email.toLowerCase()
+    ? email.toLowerCase()
+    : payload.email.toLowerCase();
+
+  // Check if admin is editing another user
+  if (targetEmail !== payload.email.toLowerCase()) {
+    const { data: adminProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("email", payload.email.toLowerCase())
+      .single();
+    if (adminProfile?.role !== "admin") {
+      return NextResponse.json({ error: "Admin only" }, { status: 403 });
+    }
+  }
 
   // Look up profile by email
   const { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("id")
-    .eq("email", payload.email.toLowerCase())
+    .eq("email", targetEmail)
     .single() as { data: { id: string } | null };
 
   if (!profile) {
-    // Create profile if it doesn't exist (first-time setup)
+    // Create profile if it doesn't exist
     const { error: insertError } = await supabaseAdmin
       .from("profiles")
       .insert({
         id: crypto.randomUUID(),
-        email: payload.email.toLowerCase(),
+        email: targetEmail,
         full_name,
         role: payload.role,
         created_at: new Date().toISOString(),
@@ -33,7 +50,6 @@ export async function POST(req: NextRequest) {
       });
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
   } else {
-    // Update existing profile
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({ full_name, updated_at: new Date().toISOString() })
