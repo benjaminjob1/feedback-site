@@ -6,9 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, X, Clock, Users, Eye, Shield } from "lucide-react";
+import { Check, X, Clock, Users, Shield } from "lucide-react";
 import { SITES, BEN_EMAIL } from "@/lib/supabase";
 
 type Feedback = {
@@ -79,7 +78,7 @@ export default function AdminPage() {
   }, [router]);
 
   const updateStatus = async (id: string, status: "approved" | "rejected") => {
-    const res = await fetch(`/api/feedback/${id}`, {
+    const res = await fetch("/api/feedback/" + id, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -90,7 +89,7 @@ export default function AdminPage() {
   };
 
   const updateUserRole = async (userEmail: string, role: string) => {
-    const res = await fetch(`/api/admin/users/${encodeURIComponent(userEmail)}`, {
+    const res = await fetch("/api/admin/users/" + encodeURIComponent(userEmail), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),
@@ -132,7 +131,7 @@ export default function AdminPage() {
     if (data.user) {
       setUsers(prev => [...prev.filter(u => u.id !== data.user.id), data.user]);
       setNewUserEmail("");
-      setAddSuccess(`${data.user.email} added as ${data.user.role}!`);
+      setAddSuccess(data.user.email + " added as " + data.user.role + "!");
       setTimeout(() => setAddSuccess(""), 3000);
     }
   };
@@ -155,18 +154,17 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-4 border-b border-border mb-6">
         <button
           onClick={() => setTab("feedback")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors ${tab === "feedback" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          className={"pb-3 px-1 text-sm font-medium transition-colors " + (tab === "feedback" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
         >
           <Clock size={14} className="inline mr-1.5" />
           Feedback ({feedbackList.filter(f => f.status === "pending").length} pending)
         </button>
         <button
           onClick={() => setTab("users")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors ${tab === "users" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          className={"pb-3 px-1 text-sm font-medium transition-colors " + (tab === "users" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
         >
           <Users size={14} className="inline mr-1.5" />
           Users ({users.length})
@@ -179,7 +177,7 @@ export default function AdminPage() {
             <div className="text-center py-12 text-muted-foreground">No feedback yet</div>
           ) : (
             feedbackList.map(fb => (
-              <Card key={fb.id} className={`bg-card/80 ${fb.status === "pending" ? "border-yellow-500/30" : ""}`}>
+              <Card key={fb.id} className={"bg-card/80 " + (fb.status === "pending" ? "border-yellow-500/30" : "")}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
@@ -188,31 +186,56 @@ export default function AdminPage() {
                         <CardTitle className="text-base">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {fb.profiles?.full_name || fb.profiles?.email || "Unknown"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {(fb.profiles?.full_name || fb.profiles?.email || "Unknown") + " \u00b7 " + new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={fb.rating >= 4 ? "default" : fb.rating >= 3 ? "secondary" : "destructive"}>
-                        {fb.rating}/5 ⭐
+                        {fb.rating}/5 &#9733;
                       </Badge>
                       <Badge
                         variant={fb.status === "approved" ? "default" : fb.status === "rejected" ? "destructive" : "secondary"}
                         className={fb.status === "pending" ? "text-yellow-400 border-yellow-400/50" : ""}
                       >
-                        {fb.status === "pending" && <Clock size={10} className="inline mr-1" />}
+                        {fb.status === "pending" ? <Clock size={10} className="inline mr-1" /> : null}
                         {fb.status}
                       </Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  {fb.question_easy && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Easy to use</p><p>{fb.question_easy}</p></div>}
-                  {fb.question_improve && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Could be better</p><p>{fb.question_improve}</p></div>}
-                  {fb.question_bugs && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Bugs & issues</p><p>{fb.question_bugs}</p></div>}
-                  {fb.question_features && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Requested features</p><p>{fb.question_features}</p></div>}
-                  {fb.question_other && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Anything else</p><p>{fb.question_other}</p></div>}
+                  {fb.question_easy ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Easy to use</p>
+                      <p>{fb.question_easy}</p>
+                    </div>
+                  ) : null}
+                  {fb.question_improve ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Could be better</p>
+                      <p>{fb.question_improve}</p>
+                    </div>
+                  ) : null}
+                  {fb.question_bugs ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Bugs &amp; issues</p>
+                      <p>{fb.question_bugs}</p>
+                    </div>
+                  ) : null}
+                  {fb.question_features ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Requested features</p>
+                      <p>{fb.question_features}</p>
+                    </div>
+                  ) : null}
+                  {fb.question_other ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Anything else</p>
+                      <p>{fb.question_other}</p>
+                    </div>
+                  ) : null}
 
-                  {fb.status === "pending" && (
+                  {fb.status === "pending" ? (
                     <div className="flex gap-2 pt-3 border-t border-border">
                       <Button size="sm" onClick={() => updateStatus(fb.id, "approved")}>
                         <Check size={14} className="mr-1" /> Approve
@@ -221,7 +244,7 @@ export default function AdminPage() {
                         <X size={14} className="mr-1" /> Reject
                       </Button>
                     </div>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
             ))
@@ -229,7 +252,6 @@ export default function AdminPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Add user */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -253,89 +275,92 @@ export default function AdminPage() {
                   <option value="viewer">Viewer</option>
                   <option value="admin">Admin</option>
                 </select>
-                <Button onClick={addUser}>Add</Button>
+                <Button onClick={() => addUser()}>Add</Button>
               </div>
-              {addError && <p className="text-sm text-destructive">{addError}</p>}
-              {addSuccess && <p className="text-sm text-green-500">{addSuccess}</p>}
+              {addError ? <p className="text-sm text-destructive">{addError}</p> : null}
+              {addSuccess ? <p className="text-sm text-green-500">{addSuccess}</p> : null}
             </CardContent>
           </Card>
 
-          {/* User list */}
           <div className="space-y-3">
-            {users.map(u => (
-              <Card key={u.id}>
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                    {editingUserEmail === u.email ? (
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={editingUserName}
-                          onChange={e => setEditingUserName(e.target.value)}
-                          className="border border-border rounded px-2 py-1 text-sm bg-background w-36"
-                          autoFocus
-                        />
-                        <button onClick={saveUserName} disabled={savingName} className="text-xs text-primary hover:underline disabled:opacity-50">
-                          {savingName ? "Saving..." : "Save"}
-                        </button>
-                        <button onClick={() => setEditingUserEmail(null)} className="text-xs text-muted-foreground hover:underline">
-                          Cancel
-                        </button>
+            {users.map(u => {
+              const isBen = u.email.toLowerCase() === BEN_EMAIL.toLowerCase();
+              const isAdmin = user && user.role === "admin";
+              return (
+                <Card key={u.id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        {editingUserEmail === u.email ? (
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={editingUserName}
+                              onChange={e => setEditingUserName(e.target.value)}
+                              className="border border-border rounded px-2 py-1 text-sm bg-background w-36"
+                              autoFocus
+                            />
+                            <button onClick={() => saveUserName()} disabled={savingName} className="text-xs text-primary hover:underline disabled:opacity-50">
+                              {savingName ? "Saving..." : "Save"}
+                            </button>
+                            <button onClick={() => setEditingUserEmail(null)} className="text-xs text-muted-foreground hover:underline">
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-medium">{u.full_name || "No name"}</p>
+                            <p className="text-sm text-muted-foreground">{u.email}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <>
-                        <p className="font-medium">{u.full_name || "No name"}</p>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                        </p>
-                      </>
-                    )}
+                      <div className="flex items-center gap-3">
+                        <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                          {u.role}
+                        </Badge>
+                        {isBen ? (
+                          <span className="text-xs text-muted-foreground">Ben (you)</span>
+                        ) : isAdmin ? (
+                          <button
+                            onClick={() => { setEditingUserEmail(u.email); setEditingUserName(u.full_name || ""); }}
+                            className="text-xs text-muted-foreground hover:text-primary hover:underline mr-2"
+                          >
+                            Edit name
+                          </button>
+                        ) : null}
+                        {isAdmin && !isBen ? (
+                          <div className="flex gap-2">
+                            {u.role === "user" ? (
+                              <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                Make Viewer
+                              </Button>
+                            ) : null}
+                            {u.role === "viewer" ? (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
+                                  Make User
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
+                                  Make Admin
+                                </Button>
+                              </>
+                            ) : null}
+                            {u.role === "admin" ? (
+                              <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                Remove Admin
+                              </Button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={u.role === "admin" ? "default" : u.role === "viewer" ? "secondary" : "outline"}>
-                        {u.role}
-                      </Badge>
-                      {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() ? (
-                        <span className="text-xs text-muted-foreground">Ben (you)</span>
-                      ) : (
-                        <button
-                          onClick={() => { setEditingUserEmail(u.email); setEditingUserName(u.full_name || ""); }}
-                          className="text-xs text-muted-foreground hover:text-primary hover:underline mr-2"
-                        >
-                          Edit name
-                        </button>
-                      )}
-                      {user && user.role === "admin" \&\& u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() && (
-                        <div className="flex gap-2">
-                          {u.role === "user" && (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                              Make Viewer
-                            </Button>
-                          )}
-                          {u.role === "viewer" && (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
-                              Make User
-                            </Button>
-                          )}
-                          {u.role === "viewer" && (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
-                              Make Admin
-                            </Button>
-                          )}
-                          {u.role === "admin" && (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                              Remove Admin
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
