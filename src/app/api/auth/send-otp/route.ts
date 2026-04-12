@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateOTP, storeOTP, getUserRole } from "@/lib/auth-server";
+import { createOTTToken, getUserRole } from "@/lib/auth-server";
 
 export const runtime = "nodejs";
 
@@ -13,17 +13,17 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.toLowerCase();
     const role = getUserRole(normalizedEmail);
     if (!role) {
-      // Don't reveal whether email is authorized
-      return NextResponse.json({ success: true, message: "Check your email for a code" });
+      // Don't reveal whether email is authorized - still send success to avoid enumeration
+      return NextResponse.json({ success: true, message: "Check your email for a link", token: "" });
     }
 
-    const otp = generateOTP();
-    storeOTP(normalizedEmail, otp);
+    const ottToken = await createOTTToken(normalizedEmail, role);
+    const loginUrl = `https://feedback.benjob.me/api/auth/verify-otp?token=${ottToken}`;
 
-    const subject = role === "admin" ? "🔐 BenBot Feedback Admin Login Code" : "🔐 BenBot Feedback Portal Login Code";
+    const subject = role === "admin" ? "🔐 BenBot Feedback Admin Login Link" : "🔐 BenBot Feedback Portal Login Link";
     const text = role === "admin"
-      ? `Your admin login code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore.`
-      : `Your login code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore.`;
+      ? `Click this link to sign in (expires in 5 minutes):\n\n${loginUrl}\n\nIf you didn't request this, please ignore.`
+      : `Click this link to sign in (expires in 5 minutes):\n\n${loginUrl}\n\nIf you didn't request this, please ignore.`;
 
     const response = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
       method: "POST",
@@ -38,9 +38,9 @@ export async function POST(req: NextRequest) {
       console.error("[send-otp] AgentMail error:", await response.text());
     }
 
-    return NextResponse.json({ success: true, message: "Check your email for a code" });
+    return NextResponse.json({ success: true, message: "Check your email for a link", token: ottToken });
   } catch (error: any) {
     console.error("[send-otp] Error:", error.message);
-    return NextResponse.json({ error: "Failed to send code" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to send link" }, { status: 500 });
   }
 }
