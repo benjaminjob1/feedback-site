@@ -483,7 +483,7 @@ export default function SubmitPage() {
               {feedbackLength === "quick" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="quick-note">Anything you'd like to add? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Label htmlFor="quick-note">Anything you would like to add? <span className="text-muted-foreground font-normal">(optional)</span></Label>
                     <Textarea
                       id="quick-note"
                       placeholder="Quick thought, praise, or suggestion..."
