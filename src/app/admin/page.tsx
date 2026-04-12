@@ -344,9 +344,17 @@ export default function AdminPage() {
                         {isAdmin && !isBen ? (
                           <div className="flex gap-2">
                             {u.role === "user" ? (
-                              <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
-                                Remove
-                              </Button>
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                  Make Viewer
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
+                                  Make Admin
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                  Remove
+                                </Button>
+                              </>
                             ) : null}
                             {u.role === "viewer" ? (
                               <>
@@ -359,9 +367,14 @@ export default function AdminPage() {
                               </>
                             ) : null}
                             {u.role === "admin" ? (
-                              <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                                Remove Admin
-                              </Button>
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
+                                  Make User
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                  Remove
+                                </Button>
+                              </>
                             ) : null}
                           </div>
                         ) : null}
