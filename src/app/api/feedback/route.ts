@@ -14,10 +14,11 @@ export async function GET(req: NextRequest) {
     .from("profiles")
     .select("id, role")
     .eq("email", payload.email.toLowerCase())
-    .single();
+    .single() as { data: { id: string; role: string } | null };
+
 
   const role = profile?.role;
-  const userId = profile?.id;
+  const userId = profile?.id as string | null;
 
   let query = supabaseAdmin
     .from("feedback")
