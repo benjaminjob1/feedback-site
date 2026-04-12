@@ -600,14 +600,14 @@ export default function SubmitPage() {
                     )}
 
                     {!aiLoading && aiError && (
-                      <p className="text-sm text-muted-foreground">
-                        Could not load AI questions. Continuing with standard questions.
+                      <p className="text-sm text-destructive">
+                        AI error — check console or try again.
                       </p>
                     )}
 
                     {!aiLoading && aiQuestions.length === 0 && !aiError && (
                       <p className="text-sm text-muted-foreground">
-                        No additional questions generated.
+                        No additional questions generated. Make sure ANTHROPIC_API_KEY is set in Vercel env vars.
                       </p>
                     )}
 
