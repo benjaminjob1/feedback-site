@@ -24,17 +24,17 @@ export async function POST(req: NextRequest) {
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
+        model: "claude-3-5-haiku-20241022",
         max_tokens: 300,
+        messages: [{ role: "user", content: prompt }],
       }),
       signal: controller.signal,
     });
@@ -42,14 +42,13 @@ export async function POST(req: NextRequest) {
     clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error("OpenAI error:", res.status, await res.text());
+      console.error("Anthropic error:", res.status, await res.text());
       return NextResponse.json({ questions: [] });
     }
 
     const data = await res.json();
-    const content: string = data.choices?.[0]?.message?.content?.trim() ?? "";
+    const content: string = data.content?.[0]?.text?.trim() ?? "";
 
-    // Strip code fences if present
     const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/i, "");
     const parsed = JSON.parse(jsonStr);
 
