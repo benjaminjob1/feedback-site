@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+const BEN_EMAIL = "benjamin.job@gwern.co.uk";
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get("fb_session")?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,20 +14,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { email, full_name } = body;
 
-  // Which profile to update — admin can pass email, otherwise own profile
+  // Which profile to update
   const targetEmail = email && email !== payload.email.toLowerCase()
     ? email.toLowerCase()
     : payload.email.toLowerCase();
 
-  // Check if admin is editing another user
+  // Only Ben can edit other users
   if (targetEmail !== payload.email.toLowerCase()) {
-    const { data: adminProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("email", payload.email.toLowerCase())
-      .single();
-    if (adminProfile?.role !== "admin") {
-      return NextResponse.json({ error: "Admin only" }, { status: 403 });
+    if (payload.email.toLowerCase() !== BEN_EMAIL) {
+      return NextResponse.json({ error: "Only Ben can manage other users" }, { status: 403 });
     }
   }
 
@@ -37,7 +34,6 @@ export async function POST(req: NextRequest) {
     .single() as { data: { id: string } | null };
 
   if (!profile) {
-    // Create profile if it doesn't exist
     const { error: insertError } = await supabaseAdmin
       .from("profiles")
       .insert({

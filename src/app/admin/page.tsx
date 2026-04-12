@@ -297,7 +297,7 @@ export default function AdminPage() {
                       <Badge variant={u.role === "admin" ? "default" : u.role === "viewer" ? "secondary" : "outline"}>
                         {u.role}
                       </Badge>
-                      {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() ? (
+                      {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() && (
                         <span className="text-xs text-muted-foreground">Ben (you)</span>
                       ) : (
                         <button
@@ -307,7 +307,7 @@ export default function AdminPage() {
                           Edit name
                         </button>
                       )}
-                      {(u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() || !BEN_EMAIL) && (
+                      {user.role === "admin" && u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() && (
                         <div className="flex gap-2">
                           {u.role === "user" && (
                             <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
