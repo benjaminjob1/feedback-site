@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,10 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [tab, setTab] = useState<"feedback" | "users">("feedback");
   const [loading, setLoading] = useState(true);
-  const [viewerEmail, setViewerEmail] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"viewer" | "admin">("viewer");
+  const [addError, setAddError] = useState("");
+  const [addSuccess, setAddSuccess] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -50,12 +52,12 @@ export default function AdminPage() {
       const sessionRes = await fetch("/api/auth/session");
       const { user: sessionUser } = await sessionRes.json();
       if (!sessionUser || sessionUser.role !== "admin") {
-        router.push("/login");
+        router.push("/");
         return;
       }
-      
+
       setUser(sessionUser as any);
-      
+
       const profileRes = await fetch("/api/admin/users");
       if (!profileRes.ok) {
         router.push("/");
@@ -63,11 +65,11 @@ export default function AdminPage() {
       }
       const profileData = await profileRes.json();
       setUsers(profileData.users || []);
-      
+
       const fbRes = await fetch("/api/feedback");
       const fbData = await fbRes.json();
       setFeedbackList(fbData.feedback || []);
-      
+
       setLoading(false);
     };
     checkAdmin();
@@ -84,30 +86,36 @@ export default function AdminPage() {
     }
   };
 
-  const updateUserRole = async (userId: string, role: string) => {
-    const res = await fetch(`/api/admin/users/${userId}`, {
+  const updateUserRole = async (userEmail: string, role: string) => {
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(userEmail)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),
     });
     if (res.ok) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+      setUsers(prev => prev.map(u => u.email === userEmail ? { ...u, role } : u));
     }
   };
 
-  const addViewer = async () => {
-    if (!viewerEmail) return;
-    const res = await fetch("/api/admin/viewers", {
+  const addUser = async () => {
+    setAddError("");
+    setAddSuccess("");
+    if (!newUserEmail) return;
+    const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: viewerEmail }),
+      body: JSON.stringify({ email: newUserEmail, role: newUserRole }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.user) {
-        setUsers(prev => [...prev, data.user]);
-        setViewerEmail("");
-      }
+    const data = await res.json();
+    if (!res.ok) {
+      setAddError(data.error || "Failed to add user");
+      return;
+    }
+    if (data.user) {
+      setUsers(prev => [...prev.filter(u => u.id !== data.user.id), data.user]);
+      setNewUserEmail("");
+      setAddSuccess(`${data.user.email} added as ${data.user.role}!`);
+      setTimeout(() => setAddSuccess(""), 3000);
     }
   };
 
@@ -185,7 +193,7 @@ export default function AdminPage() {
                   {fb.question_bugs && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Bugs & issues</p><p>{fb.question_bugs}</p></div>}
                   {fb.question_features && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Requested features</p><p>{fb.question_features}</p></div>}
                   {fb.question_other && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Anything else</p><p>{fb.question_other}</p></div>}
-                  
+
                   {fb.status === "pending" && (
                     <div className="flex gap-2 pt-3 border-t border-border">
                       <Button size="sm" onClick={() => updateStatus(fb.id, "approved")}>
@@ -203,24 +211,34 @@ export default function AdminPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Add viewer */}
+          {/* Add user */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Eye size={16} /> Add Viewer
+                <Users size={16} /> Add User
               </CardTitle>
-              <CardDescription>Add a user who can see pending feedback (but not submit)</CardDescription>
+              <CardDescription>Add a viewer or admin by email address</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex gap-3">
                 <Input
                   type="email"
                   placeholder="user@example.com"
-                  value={viewerEmail}
-                  onChange={e => setViewerEmail(e.target.value)}
+                  value={newUserEmail}
+                  onChange={e => setNewUserEmail(e.target.value)}
                 />
-                <Button onClick={addViewer}>Add</Button>
+                <select
+                  value={newUserRole}
+                  onChange={e => setNewUserRole(e.target.value as "viewer" | "admin")}
+                  className="border border-border rounded-md bg-background px-3 text-sm"
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <Button onClick={addUser}>Add</Button>
               </div>
+              {addError && <p className="text-sm text-destructive">{addError}</p>}
+              {addSuccess && <p className="text-sm text-green-500">{addSuccess}</p>}
             </CardContent>
           </Card>
 
@@ -235,7 +253,6 @@ export default function AdminPage() {
                       <p className="text-sm text-muted-foreground">{u.email}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                        {u.email_verified ? " • ✓ verified" : " • pending verification"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -243,20 +260,31 @@ export default function AdminPage() {
                         {u.role}
                       </Badge>
                       {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() ? (
-                        <span className="text-xs text-muted-foreground">Ben</span>
-                      ) : u.role !== "admin" ? (
+                        <span className="text-xs text-muted-foreground">Ben (you)</span>
+                      ) : (
                         <div className="flex gap-2">
-                          {u.role === "user" ? (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.id, "viewer")}>
+                          {u.role === "user" && (
+                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
                               Make Viewer
                             </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.id, "user")}>
+                          )}
+                          {u.role === "viewer" && (
+                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
                               Make User
                             </Button>
                           )}
+                          {u.role === "viewer" && (
+                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
+                              Make Admin
+                            </Button>
+                          )}
+                          {u.role === "admin" && (
+                            <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                              Remove Admin
+                            </Button>
+                          )}
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 </CardContent>
