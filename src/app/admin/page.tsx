@@ -88,6 +88,16 @@ export default function AdminPage() {
     }
   };
 
+  const deleteUser = async (userEmail: string) => {
+    if (!confirm("Remove this user? They can re-register anytime.")) return;
+    const res = await fetch("/api/admin/users/" + encodeURIComponent(userEmail), {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.email !== userEmail));
+    }
+  };
+
   const updateUserRole = async (userEmail: string, role: string) => {
     const res = await fetch("/api/admin/users/" + encodeURIComponent(userEmail), {
       method: "PATCH",
