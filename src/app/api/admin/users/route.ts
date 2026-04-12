@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
-import { BEN_EMAIL } from "@/lib/supabase-admin";
+import { BEN_EMAIL } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   const { data: { user } } = await supabaseAdmin.auth.getUser();
