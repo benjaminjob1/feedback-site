@@ -18,12 +18,16 @@ export async function GET(req: NextRequest) {
 
 
   const role = profile?.role;
-  const userId = profile?.id as string | null;
+  const userId = profile?.id as string;
+
+  if (!userId) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+
 
   let query = supabaseAdmin
     .from("feedback")
     .select("*, profiles(full_name, email)")
     .order("created_at", { ascending: false });
+
 
   if (role === "admin") {
     // Admins see everything
