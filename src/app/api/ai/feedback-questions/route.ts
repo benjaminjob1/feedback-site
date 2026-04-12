@@ -42,18 +42,38 @@ export async function POST(req: NextRequest) {
     clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error("Anthropic error:", res.status, await res.text());
-      return NextResponse.json({ error: "Anthropic API error", questions: [], status: res.status }, { status: 500 });
+      const errText = await res.text();
+      console.error("Anthropic error:", res.status, errText);
+      return NextResponse.json({ questions: [], apiError: true });
     }
 
     const data = await res.json();
-    console.error("Anthropic response:", JSON.stringify(data));
-    const content: string = data.content?.[0]?.text?.trim() ?? "";
+
+    // Handle Anthropic's response format — content is an array of blocks
+    let content = "";
+    const rawContent = (data as any).content;
+    if (Array.isArray(rawContent)) {
+      content = rawContent.map((block: any) => block.text ?? "").join("").trim();
+    } else if (typeof rawContent === "string") {
+      content = rawContent.trim();
+    }
+
+    if (!content) {
+      console.error("Empty content from Anthropic:", JSON.stringify(data));
+      return NextResponse.json({ questions: [] });
+    }
 
     const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/i, "");
-    const parsed = JSON.parse(jsonStr);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      console.error("Failed to parse JSON from AI. Raw:", jsonStr.substring(0, 200));
+      return NextResponse.json({ questions: [] });
+    }
 
     if (!Array.isArray(parsed.questions)) {
+      console.error("parsed.questions is not an array:", JSON.stringify(parsed).substring(0, 200));
       return NextResponse.json({ questions: [] });
     }
 
@@ -66,6 +86,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     clearTimeout(timeout);
     console.error("AI feedback-questions error:", err);
-    return NextResponse.json({ error: "Request failed", questions: [] });
+    return NextResponse.json({ questions: [] });
   }
 }
