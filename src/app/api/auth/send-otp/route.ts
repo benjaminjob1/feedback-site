@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     const ottToken = await createOTTToken(normalizedEmail, role || "user");
     const loginUrl = `${siteUrl}/api/auth/verify-otp?token=${ottToken}`;
 
-    const subject = "🔐 Feedback Portal Login Link (+ token below)";
-    const text = `Your Feedback Portal login link:\n\n${loginUrl}\n\nOr use this token directly:\n${ottToken}\n\nThis token expires in 5 minutes.\n\nIf you didn't request this, ignore this email.`;
+    const subject = "🔐 Feedback Portal — Sign In Link";
+    const text = `Click below to sign in to the Feedback Portal:\n\n${loginUrl}\n\nThis link expires in 5 minutes.\nIf you didn't request this, ignore this email.`;
 
     const response = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
       method: "POST",
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       console.error("[send-otp] AgentMail error:", await response.text());
     }
 
-    return NextResponse.json({ success: true, message: "Check your email for a link", token: ottToken });
+    return NextResponse.json({ success: true, message: "Check your email for a link" });
   } catch (error: any) {
     console.error("[send-otp] Error:", error.message);
     return NextResponse.json({ error: "Failed to send link" }, { status: 500 });
