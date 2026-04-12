@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS public.feedback (
   question_bugs TEXT,
   question_features TEXT,
   question_other TEXT,
+  feedback_length TEXT DEFAULT 'standard' CHECK (feedback_length IN ('quick', 'standard', 'detailed')),
+  ai_questions TEXT,
   submitted_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMPTZ DEFAULT NOW()

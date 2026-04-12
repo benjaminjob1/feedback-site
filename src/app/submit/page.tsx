@@ -5,12 +5,14 @@ import { SITES } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, ChevronLeft, ChevronRight, Check, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Star, ChevronLeft, Check, Pencil, Loader2 } from "lucide-react";
 
 type Step = 1 | 2 | 3 | 4;
+
+type FeedbackLength = "quick" | "standard" | "detailed";
 
 type ExistingFeedback = {
   id: string;
@@ -21,27 +23,77 @@ type ExistingFeedback = {
   question_bugs: string;
   question_features: string;
   question_other: string;
+  feedback_length?: FeedbackLength;
+  ai_questions?: string;
   status: string;
   created_at: string;
 };
 
+type AIQuestion = { question: string; placeholder: string };
+
+const RATING_LABELS: Record<number, string> = {
+  1: "Poor",
+  2: "Below Average",
+  3: "Average",
+  4: "Good",
+  5: "Excellent",
+};
+
+const LENGTH_OPTIONS: { value: FeedbackLength; emoji: string; label: string; desc: string }[] = [
+  { value: "quick", emoji: "⚡", label: "Quick", desc: "1 min — rating + optional note" },
+  { value: "standard", emoji: "📝", label: "Standard", desc: "3 min — rating + 4 scaled questions" },
+  { value: "detailed", emoji: "🔬", label: "Detailed", desc: "5 min — rating + scales + AI follow-ups" },
+];
+
+const SCALE_QUESTIONS = [
+  { key: "question_easy", label: "Ease of use" },
+  { key: "question_improve", label: "Design & layout" },
+  { key: "question_bugs", label: "Speed & performance" },
+  { key: "question_features", label: "Features & functionality" },
+] as const;
+
+const TOTAL_STEPS = (length: FeedbackLength) => (length === "quick" ? 3 : 4);
+
 export default function SubmitPage() {
-  const [step, setStep] = useState<Step>(1);
-  const [site, setSite] = useState("");
-  const [rating, setRating] = useState(0);
-  const [questionEasy, setQuestionEasy] = useState("");
-  const [questionImprove, setQuestionImprove] = useState("");
-  const [questionBugs, setQuestionBugs] = useState("");
-  const [questionFeatures, setQuestionFeatures] = useState("");
-  const [questionOther, setQuestionOther] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  // Auth / session
   const [user, setUser] = useState<any>(null);
   const [verified, setVerified] = useState(false);
+
+  // Existing feedback
   const [existingFeedback, setExistingFeedback] = useState<ExistingFeedback[]>([]);
+
+  // Wizard state
+  const [step, setStep] = useState<Step>(1);
+  const [feedbackLength, setFeedbackLength] = useState<FeedbackLength>("standard");
+  const [site, setSite] = useState("");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [displayRating, setDisplayRating] = useState(0);
+
+  // Standard slider values (1-10), stored by question key
+  const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
+  const [sliderComments, setSliderComments] = useState<Record<string, string>>({});
+
+  // Quick textarea
+  const [quickNote, setQuickNote] = useState("");
+
+  // Standard/Detailed overall comments
+  const [overallComments, setOverallComments] = useState("");
+
+  // Detailed AI questions
+  const [aiQuestions, setAiQuestions] = useState<AIQuestion[]>([]);
+  const [aiAnswers, setAiAnswers] = useState<Record<number, string>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(false);
+
+  // Editing
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
-  const router = useRouter();
+
+  // UI state
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -54,37 +106,94 @@ export default function SubmitPage() {
       setUser(sessionUser);
       setVerified(true);
 
-      // Load existing feedback to know which sites are already submitted
       const fbRes = await fetch("/api/feedback");
       const fbData = await fbRes.json();
-      const feedbackList: ExistingFeedback[] = fbData.feedback || [];
-      setExistingFeedback(feedbackList);
-      setExistingIds(new Set(feedbackList.map((f: ExistingFeedback) => f.site)));
+      setExistingFeedback(fbData.feedback || []);
     };
     checkUser();
   }, [router]);
 
-  const canProceed = () => {
-    if (step === 1) return !!site;
-    if (step === 2) return rating > 0;
-    return true;
+  // Load AI questions when reaching step 3 in detailed mode
+  useEffect(() => {
+    if (step === 3 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError) {
+      fetchAIQuestions();
+    }
+  }, [step, feedbackLength]);
+
+  const fetchAIQuestions = async () => {
+    setAiLoading(true);
+    setAiError(false);
+    try {
+      const res = await fetch("/api/ai/feedback-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site, rating }),
+      });
+      const data = await res.json();
+      setAiQuestions(data.questions || []);
+    } catch {
+      setAiError(true);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleEditExisting = (fb: ExistingFeedback) => {
     setEditingId(fb.id);
     setSite(fb.site);
     setRating(fb.rating);
-    setQuestionEasy(fb.question_easy || "");
-    setQuestionImprove(fb.question_improve || "");
-    setQuestionBugs(fb.question_bugs || "");
-    setQuestionFeatures(fb.question_features || "");
-    setQuestionOther(fb.question_other || "");
+    setDisplayRating(fb.rating);
+    setHoverRating(0);
+    const len = (fb.feedback_length as FeedbackLength) || "standard";
+    setFeedbackLength(len);
+
+    // Restore slider values from stored text fields
+    const sliders: Record<string, number> = {};
+    SCALE_QUESTIONS.forEach(({ key }) => {
+      const val = (fb as any)[key];
+      // Stored values may be "7" or "7/10" or just plain text — try to extract a number
+      const match = String(val ?? "").match(/^(\d+)/);
+      sliders[key] = match ? parseInt(match[1]) : 5;
+    });
+    setSliderValues(sliders);
+
+    // Try to parse AI questions from stored field
+    if (fb.ai_questions) {
+      try {
+        const parsed = JSON.parse(fb.ai_questions);
+        if (Array.isArray(parsed)) setAiQuestions(parsed);
+      } catch { /* ignore */ }
+    }
+
+    setQuickNote("");
+    setOverallComments(fb.question_other || "");
     setStep(2);
   };
 
   const handleSubmit = async () => {
     setError("");
     setLoading(true);
+
+    // Build question_easy/improve/bugs/features from slider values
+    const questionEasy = String(sliderValues["question_easy"] ?? "");
+    const questionImprove = String(sliderValues["question_improve"] ?? "");
+    const questionBugs = String(sliderValues["question_bugs"] ?? "");
+    const questionFeatures = String(sliderValues["question_features"] ?? "");
+
+    // AI answers stored as JSON in question_other or a dedicated field
+    let aiQuestionsJson = "";
+    if (feedbackLength === "detailed" && aiQuestions.length > 0) {
+      const answersObj = Object.fromEntries(
+        aiQuestions.map((q, i) => [q.question, aiAnswers[i] ?? ""])
+      );
+      aiQuestionsJson = JSON.stringify(answersObj);
+    }
+
+    // For quick: overall comment goes in question_other
+    const questionOther =
+      feedbackLength === "quick"
+        ? quickNote
+        : overallComments + (aiQuestionsJson ? `\n\n[AI Follow-ups]\n${aiQuestionsJson}` : "");
 
     const body: any = {
       site,
@@ -94,6 +203,7 @@ export default function SubmitPage() {
       question_bugs: questionBugs,
       question_features: questionFeatures,
       question_other: questionOther,
+      feedback_length: feedbackLength,
     };
     if (editingId) body.edit_id = editingId;
 
@@ -108,37 +218,75 @@ export default function SubmitPage() {
 
     if (!res.ok) {
       if (res.status === 409 && data.existing_id) {
-        // Already exists — load it for editing
         const fb = existingFeedback.find((f: ExistingFeedback) => f.id === data.existing_id);
         if (fb) handleEditExisting(fb);
       } else {
         setError(data.error || "Something went wrong");
       }
-      setLoading(false);
       return;
     }
 
     if (editingId) {
-      // Updated in place
       setExistingFeedback(prev =>
-        prev.map(f => f.id === editingId ? { ...f, rating, question_easy: questionEasy, question_improve: questionImprove, question_bugs: questionBugs, question_features: questionFeatures, question_other: questionOther } : f)
+        prev.map(f =>
+          f.id === editingId
+            ? { ...f, rating, question_easy: questionEasy, question_improve: questionImprove, question_bugs: questionBugs, question_features: questionFeatures, question_other: questionOther }
+            : f
+        )
       );
     } else {
-      // New entry
       const newFb = data.feedback;
       setExistingFeedback(prev => [...prev, newFb]);
-      setExistingIds(prev => new Set([...Array.from(prev), site]));
     }
 
     setStep(4);
     setLoading(false);
-    setTimeout(() => router.push("/"), 1500);
+    setTimeout(() => router.push("/"), 2000);
   };
 
-  // Sites already submitted
+  // Derived
   const submittedSites = existingFeedback.map(f => f.site);
   const availableSites = SITES.filter(s => !submittedSites.includes(s.value));
   const submittedSitesList = SITES.filter(s => submittedSites.includes(s.value));
+
+  const canProceedFromStep2 = rating > 0;
+
+  // Count of question responses for summary
+  const questionCount =
+    feedbackLength === "quick"
+      ? quickNote.trim() ? 1 : 0
+      : feedbackLength === "standard"
+      ? Object.values(sliderValues).filter(v => v > 0).length + (overallComments.trim() ? 1 : 0)
+      : Object.values(sliderValues).filter(v => v > 0).length +
+        Object.values(aiAnswers).filter(a => a.trim()).length +
+        (overallComments.trim() ? 1 : 0);
+
+  // Step indicator
+  const totalSteps = TOTAL_STEPS(feedbackLength);
+  const renderStepIndicator = () => (
+    <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
+      {Array.from({ length: totalSteps }, (_, i) => i + 1).map(n => (
+        <div key={n} className="flex items-center gap-2">
+          <div
+            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
+              step > n
+                ? "bg-primary text-primary-foreground"
+                : step === n
+                ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                : "bg-secondary"
+            }`}
+          >
+            {step > n ? <Check size={12} /> : n}
+          </div>
+          {n < totalSteps && (
+            <div className={`w-10 h-px ${step > n ? "bg-primary" : "bg-border"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  const starLabel = RATING_LABELS[displayRating] || "";
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-xl">
@@ -147,19 +295,7 @@ export default function SubmitPage() {
         <p className="text-muted-foreground mt-1">Help improve Ben&apos;s projects</p>
       </div>
 
-      {/* Step indicator */}
-      {step < 4 && (
-        <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
-          {[1, 2, 3].map(n => (
-            <div key={n} className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= n ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
-                {step > n ? <Check size={12} /> : n}
-              </div>
-              {n < 3 && <div className={`w-8 h-px ${step > n ? "bg-primary" : "bg-border"}`} />}
-            </div>
-          ))}
-        </div>
-      )}
+      {step < 4 && renderStepIndicator()}
 
       <Card>
         <CardContent className="pt-6">
@@ -169,22 +305,55 @@ export default function SubmitPage() {
             </div>
           )}
 
-          {/* Step 1: site selection */}
+          {/* ══════════════════════════════════════════
+              STEP 1 — Length + Site selection
+          ══════════════════════════════════════════ */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Length picker */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">How much time do you have?</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {LENGTH_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setFeedbackLength(opt.value)}
+                      className={`p-4 border rounded-lg text-left transition-all flex items-center gap-3 ${
+                        feedbackLength === opt.value
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/60"
+                      }`}
+                    >
+                      <span className="text-2xl">{opt.emoji}</span>
+                      <div>
+                        <div className="font-medium">{opt.label}</div>
+                        <div className="text-sm text-muted-foreground">{opt.desc}</div>
+                      </div>
+                      {feedbackLength === opt.value && (
+                        <Check size={16} className="ml-auto text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Site picker */}
               <div className="space-y-3">
                 {availableSites.length > 0 && (
                   <>
-                    <Label>Which project?</Label>
+                    <Label className="text-base font-medium">Which project?</Label>
                     <div className="grid grid-cols-2 gap-3">
-                      {availableSites.map(site => (
+                      {availableSites.map(s => (
                         <button
-                          key={site.value}
-                          onClick={() => { setSite(site.value); setStep(2); }}
+                          key={s.value}
+                          onClick={() => {
+                            setSite(s.value);
+                            setStep(2);
+                          }}
                           className="p-4 border border-border rounded-lg text-left hover:border-primary transition-colors"
                         >
-                          <span className="text-xl">{site.emoji}</span>
-                          <span className="block mt-1 font-medium">{site.label}</span>
+                          <span className="text-xl">{s.emoji}</span>
+                          <span className="block mt-1 font-medium">{s.label}</span>
                         </button>
                       ))}
                     </div>
@@ -194,21 +363,25 @@ export default function SubmitPage() {
 
               {submittedSitesList.length > 0 && (
                 <div className="pt-4 border-t border-border space-y-3">
-                  <Label className="text-muted-foreground">Already submitted — edit below:</Label>
+                  <Label className="text-base font-medium text-muted-foreground">
+                    Already submitted — edit below:
+                  </Label>
                   <div className="grid grid-cols-2 gap-3">
-                    {submittedSitesList.map(site => {
-                      const fb = existingFeedback.find((f: ExistingFeedback) => f.site === site.value);
+                    {submittedSitesList.map(s => {
+                      const fb = existingFeedback.find((f: ExistingFeedback) => f.site === s.value);
                       return (
                         <button
-                          key={site.value}
+                          key={s.value}
                           onClick={() => fb && handleEditExisting(fb)}
                           className="p-4 border border-border rounded-lg text-left hover:border-primary transition-colors relative"
                         >
-                          <span className="text-xl">{site.emoji}</span>
-                          <span className="block mt-1 font-medium">{site.label}</span>
+                          <span className="text-xl">{s.emoji}</span>
+                          <span className="block mt-1 font-medium">{s.label}</span>
                           <Pencil size={12} className="absolute top-3 right-3 text-muted-foreground" />
                           {fb && (
-                            <span className="block text-xs text-muted-foreground mt-1 capitalize">★ {fb.rating}/5 — {fb.status}</span>
+                            <span className="block text-xs text-muted-foreground mt-1">
+                              ★ {fb.rating}/5 — {fb.status}
+                            </span>
                           )}
                         </button>
                       );
@@ -220,83 +393,295 @@ export default function SubmitPage() {
               {availableSites.length === 0 && submittedSitesList.length > 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>You&apos;ve submitted feedback for all projects!</p>
-                  <p className="text-sm mt-1">Edit any of your submissions above.</p>
+                  <p className="text-sm mt-1">Edit any submission above.</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 2: rating */}
+          {/* ══════════════════════════════════════════
+              STEP 2 — Star rating
+          ══════════════════════════════════════════ */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <button onClick={() => setStep(1)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                >
                   <ChevronLeft size={14} /> Back
                 </button>
-                <span className="text-sm font-medium">{SITES.find(s => s.value === site)?.emoji} {SITES.find(s => s.value === site)?.label}</span>
+                <span className="text-sm font-medium flex items-center gap-1">
+                  {SITES.find(s => s.value === site)?.emoji}{" "}
+                  {SITES.find(s => s.value === site)?.label}
+                </span>
               </div>
-              <Label>How easy was it to use?</Label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setRating(n)}
-                    className="w-12 h-12 rounded-lg border border-border hover:border-primary transition-colors flex items-center justify-center"
-                  >
-                    <Star size={20} className={n <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-600"} />
-                  </button>
-                ))}
+
+              <div className="text-center space-y-3">
+                <Label className="text-lg font-medium block">Overall rating</Label>
+                <div className="flex gap-2 justify-center">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => {
+                        setRating(n);
+                        setDisplayRating(n);
+                      }}
+                      onMouseEnter={() => setHoverRating(n)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="w-14 h-14 rounded-lg border border-border hover:border-primary transition-colors flex items-center justify-center"
+                    >
+                      <Star
+                        size={24}
+                        className={
+                          n <= (hoverRating || rating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-600"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+                {starLabel && (
+                  <p className="text-sm font-medium text-foreground animate-in fade-in slide-in-from-bottom-1 duration-200">
+                    {rating} — {starLabel}
+                  </p>
+                )}
               </div>
-              <Button onClick={() => rating > 0 && setStep(3)} className="w-full" disabled={rating === 0}>
+
+              <Button
+                onClick={() => canProceedFromStep2 && setStep(3)}
+                className="w-full"
+                disabled={!canProceedFromStep2}
+              >
                 Continue
               </Button>
             </div>
           )}
 
-          {/* Step 3: questions */}
+          {/* ══════════════════════════════════════════
+              STEP 3 — Questions (varies by length)
+          ══════════════════════════════════════════ */}
           {step === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <button onClick={() => setStep(2)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <button
+                  onClick={() => setStep(2)}
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                >
                   <ChevronLeft size={14} /> Back
                 </button>
-                <span className="text-sm">{rating}/5 ★</span>
+                <span className="text-sm flex items-center gap-1">
+                  {rating}/5 ★
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {feedbackLength}
+                  </Badge>
+                </span>
               </div>
 
-              <div className="space-y-2">
-                <Label>What did you like?</Label>
-                <Textarea placeholder="Easy to use, good design..." value={questionEasy} onChange={e => setQuestionEasy(e.target.value)} rows={2} />
-              </div>
-              <div className="space-y-2">
-                <Label>What could be better?</Label>
-                <Textarea placeholder="Needs better navigation..." value={questionImprove} onChange={e => setQuestionImprove(e.target.value)} rows={2} />
-              </div>
-              <div className="space-y-2">
-                <Label>Any bugs or issues?</Label>
-                <Textarea placeholder="Login doesn't work on mobile..." value={questionBugs} onChange={e => setQuestionBugs(e.target.value)} rows={2} />
-              </div>
-              <div className="space-y-2">
-                <Label>Features you&apos;d like?</Label>
-                <Textarea placeholder="Dark mode, export feature..." value={questionFeatures} onChange={e => setQuestionFeatures(e.target.value)} rows={2} />
-              </div>
-              <div className="space-y-2">
-                <Label>Anything else?</Label>
-                <Textarea placeholder="General feedback..." value={questionOther} onChange={e => setQuestionOther(e.target.value)} rows={2} />
-              </div>
+              {/* ── QUICK ── */}
+              {feedbackLength === "quick" && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quick-note">Anything you'd like to add? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Textarea
+                      id="quick-note"
+                      placeholder="Quick thought, praise, or suggestion..."
+                      value={quickNote}
+                      onChange={e => setQuickNote(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                  <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                  </Button>
+                </div>
+              )}
 
-              <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-                {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
-              </Button>
+              {/* ── STANDARD ── */}
+              {feedbackLength === "standard" && (
+                <div className="space-y-5">
+                  {SCALE_QUESTIONS.map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={`slider-${key}`}>{label}</Label>
+                        <Badge variant="secondary" className="min-w-[2rem] text-center justify-center">
+                          {sliderValues[key] ?? 5}
+                        </Badge>
+                      </div>
+                      <input
+                        id={`slider-${key}`}
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={sliderValues[key] ?? 5}
+                        onChange={e => setSliderValues(prev => ({ ...prev, [key]: parseInt(e.target.value) }))}
+                        className="w-full accent-primary"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Poor</span>
+                        <span>Excellent</span>
+                      </div>
+                      <Textarea
+                        placeholder={`Optional comment on ${label.toLowerCase()}...`}
+                        value={sliderComments[key] ?? ""}
+                        onChange={e => setSliderComments(prev => ({ ...prev, [key]: e.target.value }))}
+                        rows={1}
+                        className="text-sm"
+                      />
+                    </div>
+                  ))}
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="overall-comments">
+                      Overall comments <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Textarea
+                      id="overall-comments"
+                      placeholder="Anything else on your mind..."
+                      value={overallComments}
+                      onChange={e => setOverallComments(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                  </Button>
+                </div>
+              )}
+
+              {/* ── DETAILED ── */}
+              {feedbackLength === "detailed" && (
+                <div className="space-y-5">
+                  {/* Standard sliders first */}
+                  {SCALE_QUESTIONS.map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={`slider-${key}`}>{label}</Label>
+                        <Badge variant="secondary" className="min-w-[2rem] text-center justify-center">
+                          {sliderValues[key] ?? 5}
+                        </Badge>
+                      </div>
+                      <input
+                        id={`slider-${key}`}
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={sliderValues[key] ?? 5}
+                        onChange={e => setSliderValues(prev => ({ ...prev, [key]: parseInt(e.target.value) }))}
+                        className="w-full accent-primary"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Poor</span>
+                        <span>Excellent</span>
+                      </div>
+                      <Textarea
+                        placeholder={`Optional comment on ${label.toLowerCase()}...`}
+                        value={sliderComments[key] ?? ""}
+                        onChange={e => setSliderComments(prev => ({ ...prev, [key]: e.target.value }))}
+                        rows={1}
+                        className="text-sm"
+                      />
+                    </div>
+                  ))}
+
+                  {/* AI Follow-up questions */}
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-medium">AI Follow-up Questions</Label>
+                      {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                    </div>
+
+                    {aiLoading && (
+                      <div className="text-center py-4 text-muted-foreground text-sm">
+                        Generating personalized questions...
+                      </div>
+                    )}
+
+                    {!aiLoading && aiError && (
+                      <p className="text-sm text-muted-foreground">
+                        Could not load AI questions. Continuing with standard questions.
+                      </p>
+                    )}
+
+                    {!aiLoading && aiQuestions.length === 0 && !aiError && (
+                      <p className="text-sm text-muted-foreground">
+                        No additional questions generated.
+                      </p>
+                    )}
+
+                    {aiQuestions.map((q, i) => (
+                      <div key={i} className="space-y-2">
+                        <Label htmlFor={`ai-q-${i}`} className="text-sm font-medium">
+                          {q.question}
+                        </Label>
+                        <Textarea
+                          id={`ai-q-${i}`}
+                          placeholder={q.placeholder || "Your answer..."}
+                          value={aiAnswers[i] ?? ""}
+                          onChange={e => setAiAnswers(prev => ({ ...prev, [i]: e.target.value }))}
+                          rows={2}
+                          className="text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Overall comments */}
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="overall-comments-detailed">
+                      Overall comments <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Textarea
+                      id="overall-comments-detailed"
+                      placeholder="Anything else on your mind..."
+                      value={overallComments}
+                      onChange={e => setOverallComments(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Step 4: success */}
+          {/* ══════════════════════════════════════════
+              STEP 4 — Success
+          ══════════════════════════════════════════ */}
           {step === 4 && (
             <div className="text-center py-8 space-y-4">
-              <div className="text-4xl">✅</div>
-              <CardTitle>Feedback submitted!</CardTitle>
-              <CardDescription>Thanks for helping improve Ben&apos;s projects.</CardDescription>
-              <Button onClick={() => router.push("/")} className="w-full mt-4">
+              <div className="text-5xl">✅</div>
+              <CardTitle className="text-2xl">Feedback submitted!</CardTitle>
+              <CardDescription>
+                Thanks for the {feedbackLength === "quick" ? "quick" : feedbackLength === "standard" ? "standard" : "detailed"} review
+                of{" "}
+                <strong>
+                  {SITES.find(s => s.value === site)?.emoji}{" "}
+                  {SITES.find(s => s.value === site)?.label}
+                </strong>
+                .
+              </CardDescription>
+              <div className="bg-muted rounded-lg p-4 text-left space-y-1 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Rating:</span>{" "}
+                  <span className="font-medium">{rating}/5 ★ — {RATING_LABELS[rating]}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Responses:</span>{" "}
+                  <span className="font-medium">
+                    {questionCount} question{questionCount !== 1 ? "s" : ""} answered
+                  </span>
+                </div>
+                {editingId && (
+                  <div className="text-green-600 font-medium">✓ Updated existing feedback</div>
+                )}
+              </div>
+              <Button onClick={() => router.push("/")} className="w-full mt-2">
                 Back to Feedback
               </Button>
             </div>
