@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     const { error: insertError } = await supabaseAdmin
       .from("profiles")
       .insert({
+        id: crypto.randomUUID(),
         email: payload.email.toLowerCase(),
         full_name,
         role: payload.role,

@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .upsert({
+      id: crypto.randomUUID(),
       email: email.toLowerCase(),
       role,
       created_at: new Date().toISOString(),

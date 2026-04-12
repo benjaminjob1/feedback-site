@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   await supabaseAdmin
     .from("profiles")
     .upsert({
+      id: crypto.randomUUID(),
       email: payload.email.toLowerCase(),
       role: payload.role || "user",
       created_at: new Date().toISOString(),
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin
       .from("profiles")
       .upsert({
+        id: crypto.randomUUID(),
         email: normalizedEmail,
         role: payload.role || "user",
         created_at: new Date().toISOString(),
