@@ -56,9 +56,10 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .select("id, role")
     .eq("email", payload.email.toLowerCase())
-    .single();
+    .single() as { data: { id: string; role: string } | null };
 
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  const userId = profile.id;
 
   const body = await req.json();
   const { site, rating, question_easy, question_improve, question_bugs, question_features, question_other, edit_id } = body;
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
         question_other,
       })
       .eq("id", edit_id)
-      .eq("submitted_by", profile.id)
+      .eq("submitted_by", userId)
       .select()
       .single();
 
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
       question_bugs,
       question_features,
       question_other,
-      submitted_by: profile.id,
+      submitted_by: userId,
       status: "pending",
     })
     .select()
