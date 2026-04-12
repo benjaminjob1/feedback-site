@@ -103,22 +103,19 @@ export default function HomePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {!canSeeFeedback && (
+          {(canSeeFeedback || !canSeeFeedback) && (
             <Link href="/submit"><Button>Submit Feedback</Button></Link>
           )}
-          {canSeeFeedback ? (
-            <>
-              <Link href="/submit"><Button>Submit Feedback</Button></Link>
-              {user.role === "admin" && <Link href="/admin"><Button variant="outline">Admin</Button></Link>}
-            </>
-          ) : null}
+          {canSeeFeedback && user.role === "admin" && (
+            <Link href="/admin"><Button variant="outline">Admin</Button></Link>
+          )}
         </div>
       </div>
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
       ) : !canSeeFeedback ? (
-        <div className="text-center py-12 space-y-3">
+        <div className="text-center py-12">
           <p className="text-muted-foreground">Only admins and viewers can see feedback.</p>
         </div>
       ) : allFeedback.length === 0 ? (
