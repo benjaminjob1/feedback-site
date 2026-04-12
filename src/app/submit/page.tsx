@@ -600,14 +600,14 @@ export default function SubmitPage() {
                     )}
 
                     {!aiLoading && aiError && (
-                      <p className="text-sm text-destructive">
-                        AI error — check console or try again.
+                      <p className="text-sm text-muted-foreground">
+                        AI follow-up questions unavailable right now.
                       </p>
                     )}
 
                     {!aiLoading && aiQuestions.length === 0 && !aiError && (
                       <p className="text-sm text-muted-foreground">
-                        No additional questions generated. Make sure ANTHROPIC_API_KEY is set in Vercel env vars.
+                        AI follow-up questions unavailable.
                       </p>
                     )}
 
