@@ -292,12 +292,12 @@ export default function AdminPage() {
                         </p>
                       </>
                     )}
-                  </div>
+                    </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={u.role === "admin" ? "default" : u.role === "viewer" ? "secondary" : "outline"}>
                         {u.role}
                       </Badge>
-                      {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() && (
+                      {u.email.toLowerCase() === BEN_EMAIL.toLowerCase() ? (
                         <span className="text-xs text-muted-foreground">Ben (you)</span>
                       ) : (
                         <button
