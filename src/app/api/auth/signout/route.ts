@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST() {
-  const { error } = await supabaseAdmin.auth.signOut();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  // Clear the session cookie — that's all we need to do
+  // Supabase will invalidate the token on next request
+  const response = NextResponse.json({ success: true });
+  response.cookies.set("fb_session", "", { path: "/", maxAge: 0 });
+  return response;
 }
