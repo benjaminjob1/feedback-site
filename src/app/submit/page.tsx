@@ -280,7 +280,7 @@ export default function SubmitPage() {
             {step > n ? <Check size={12} /> : n}
           </div>
           {n < totalSteps && (
-            <div className={`w-10 h-px ${step > n ? "bg-primary" : "bg-border"}`} />
+            <div className={`w-10 h-px ${step > n ? "bg-primary" : "bg-border"}`} /> />
           )}
         </div>
       ))}
