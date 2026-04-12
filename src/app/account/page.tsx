@@ -25,7 +25,7 @@ export default function AccountPage() {
           return;
         }
         setUser(data.user);
-        setFullName(data.user.user_metadata?.full_name || "");
+        setFullName(data.user.full_name || "");
         setLoading(false);
       });
   }, []);

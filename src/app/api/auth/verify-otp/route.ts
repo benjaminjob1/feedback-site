@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOTTToken, createSessionToken } from "@/lib/auth-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,15 @@ export async function GET(req: NextRequest) {
   }
 
   const sessionToken = await createSessionToken(payload.email, payload.role);
+
+  // Upsert profile so there's always a record for this user
+  await supabaseAdmin
+    .from("profiles")
+    .upsert({
+      email: payload.email.toLowerCase(),
+      role: payload.role || "user",
+      created_at: new Date().toISOString(),
+    }, { onConflict: "email" });
 
   // Redirect to home with token in URL, let the page's useEffect set the cookie
   const redirectUrl = new URL("/", req.url);
@@ -47,6 +57,16 @@ export async function POST(req: NextRequest) {
     }
 
     const sessionToken = await createSessionToken(normalizedEmail, payload.role);
+
+    // Upsert profile so there's always a record for this user
+    await supabaseAdmin
+      .from("profiles")
+      .upsert({
+        email: normalizedEmail,
+        role: payload.role || "user",
+        created_at: new Date().toISOString(),
+      }, { onConflict: "email" });
+
     const response = NextResponse.json({ success: true, email: normalizedEmail, role: payload.role });
     response.cookies.set("fb_session", sessionToken, {
       httpOnly: true,
