@@ -115,7 +115,7 @@ export default function SubmitPage() {
 
   // Load AI questions when reaching step 3 in detailed mode
   useEffect(() => {
-    if (step === 3 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError) {
+    if (step === 3 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
       fetchAIQuestions();
     }
   }, [step, feedbackLength]);
