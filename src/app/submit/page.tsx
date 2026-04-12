@@ -315,19 +315,24 @@ export default function SubmitPage() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">How much time do you have?</Label>
                 <div className="grid grid-cols-1 gap-3">
-                  {LENGTH_OPTIONS.map(opt => (
+                  {LENGTH_OPTIONS.map(opt => {
+                    const isDisabled = opt.value === "detailed" && !aiAvailable;
+                    return (
                     <button
                       key={opt.value}
-                      onClick={() => setFeedbackLength(opt.value)}
+                      onClick={() => !isDisabled && setFeedbackLength(opt.value)}
+                      disabled={isDisabled}
                       className={`p-4 border rounded-lg text-left transition-all flex items-center gap-3 ${
                         feedbackLength === opt.value
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : isDisabled
+                          ? "border-border opacity-50 cursor-not-allowed"
                           : "border-border hover:border-primary/60"
                       }`}
                     >
                       <span className="text-2xl">{opt.emoji}</span>
                       <div>
-                        <div className="font-medium">{opt.label}</div>
+                        <div className="font-medium">{opt.label}{isDisabled ? " (AI unavailable)" : ""}</div>
                         <div className="text-sm text-muted-foreground">{opt.desc}</div>
                       </div>
                       {feedbackLength === opt.value && (
