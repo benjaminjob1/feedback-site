@@ -42,7 +42,14 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
 
     fetch("/api/auth/session")
       .then(res => res.json())
-      .then(data => { setUser(data.user); setLoading(false); })
+      .then(data => {
+        setUser(data.user);
+        setLoading(false);
+        if (data.user && !data.user.full_name) {
+          setShowNamePrompt(true);
+          setNameValue("");
+        }
+      })
       .catch(() => setLoading(false));
   }, []);
 
