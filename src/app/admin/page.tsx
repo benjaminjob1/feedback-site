@@ -307,7 +307,7 @@ export default function AdminPage() {
                           Edit name
                         </button>
                       )}
-                      {user \&\& user.role === "admin" \&\& u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() && (
+                      {user && user.role === "admin" \&\& u.email.toLowerCase() !== BEN_EMAIL.toLowerCase() && (
                         <div className="flex gap-2">
                           {u.role === "user" && (
                             <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
