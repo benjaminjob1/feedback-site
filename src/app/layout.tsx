@@ -67,7 +67,7 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
     document.cookie = "fb_session=; path=/; max-age=0";
     setUser(null);
     setMenuOpen(false);
-    window.location.href = "/";
+    window.location.reload();
   };
 
   return (
