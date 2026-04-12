@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
         "anthropic-version": "2023-06-01",
-      },
+      } as HeadersInit,
       body: JSON.stringify({
         model: "claude-3-5-haiku-20241022",
         max_tokens: 300,
