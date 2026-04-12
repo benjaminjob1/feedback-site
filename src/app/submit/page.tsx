@@ -87,6 +87,7 @@ export default function SubmitPage() {
   const [aiAnswers, setAiAnswers] = useState<Record<number, string>>({});
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(true);
 
   // Editing
   const [editingId, setEditingId] = useState<string | null>(null);
