@@ -127,7 +127,7 @@ export default function SubmitPage() {
       // New entry
       const newFb = data.feedback;
       setExistingFeedback(prev => [...prev, newFb]);
-      setExistingIds(prev => new Set([...prev, site]));
+      setExistingIds(prev => new Set([...Array.from(prev), site]));
     }
 
     setStep(4);
