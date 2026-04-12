@@ -65,7 +65,7 @@ export default function LoginPage() {
     <div className="container mx-auto px-4 py-16 max-w-md">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign In</CardTitle>
+          <CardTitle className="text-2xl">Sign In / Sign Up</CardTitle>
           <CardDescription>
             {sent
               ? `We sent a link to ${sentEmail}`
