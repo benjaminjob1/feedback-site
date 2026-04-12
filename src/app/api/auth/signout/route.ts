@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  // Clear the session cookie — that's all we need to do
-  // Supabase will invalidate the token on next request
+  // Clear the session cookie — Supabase invalidates the token server-side
   const response = NextResponse.json({ success: true });
   response.cookies.set("fb_session", "", { path: "/", maxAge: 0 });
   return response;
