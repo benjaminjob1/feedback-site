@@ -334,8 +334,8 @@ export default function AdminPage() {
                         {isAdmin && !isBen ? (
                           <div className="flex gap-2">
                             {u.role === "user" ? (
-                              <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                                Make Viewer
+                              <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                Remove
                               </Button>
                             ) : null}
                             {u.role === "viewer" ? (
