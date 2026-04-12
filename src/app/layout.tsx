@@ -60,7 +60,7 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
                     onClick={() => setMenuOpen(!menuOpen)}
                     className="hover:text-primary transition-colors flex items-center gap-1"
                   >
-                    {user.user_metadata?.full_name || user.email?.split("@")[0]}
+                    {user.full_name || user.email?.split("@")[0]}
                     <span className="text-xs">▾</span>
                   </button>
                   {menuOpen && (
