@@ -339,7 +339,9 @@ export default function SubmitPage() {
                         <Check size={16} className="ml-auto text-primary" />
                       )}
                     </button>
-                  ))}
+                    );
+                  })}
+                </div>
                 </div>
               </div>
 
@@ -446,7 +448,8 @@ export default function SubmitPage() {
                         }
                       />
                     </button>
-                  ))}
+                  );
+                })}
                 </div>
                 {starLabel && (
                   <p className="text-sm font-medium text-foreground animate-in fade-in slide-in-from-bottom-1 duration-200">
