@@ -1,16 +1,21 @@
 "use client";
 
-import type { Metadata } from "next";
-import "./globals.css";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function AuthHandler({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,8 +28,14 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         fetch("/api/auth/session")
           .then(res => res.json())
-          .then(data => setUser(data.user))
-          .finally(() => setLoading(false));
+          .then(data => {
+            setUser(data.user);
+            setLoading(false);
+            if (data.user && !data.user.full_name) {
+              setShowNamePrompt(true);
+              setNameValue("");
+            }
+          });
       }, 100);
       return;
     }
@@ -34,6 +45,22 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
       .then(data => { setUser(data.user); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  const handleSaveName = async () => {
+    setSavingName(true);
+    await fetch("/api/auth/update-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ full_name: nameValue }),
+    });
+    setUser((prev: any) => ({ ...prev, full_name: nameValue }));
+    setShowNamePrompt(false);
+    setSavingName(false);
+  };
+
+  const handleSkipName = () => {
+    setShowNamePrompt(false);
+  };
 
   const handleSignOut = async () => {
     await fetch("/api/auth/signout", { method: "POST" });
@@ -91,6 +118,43 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+
+      {/* Name prompt modal for first-time users */}
+      {showNamePrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-sm mx-4">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-xl">Welcome! 👋</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground text-center">
+                Enter your name to personalize your experience, or skip for now.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="first-name">Your name</Label>
+                <Input
+                  id="first-name"
+                  type="text"
+                  placeholder="e.g. Alex Smith"
+                  value={nameValue}
+                  onChange={e => setNameValue(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <Button onClick={handleSaveName} className="w-full" disabled={savingName}>
+                {savingName ? "Saving..." : "Save"}
+              </Button>
+              <button
+                onClick={handleSkipName}
+                className="w-full text-sm text-muted-foreground hover:text-primary hover:underline"
+              >
+                Skip for now
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {children}
       <Analytics />
     </>
