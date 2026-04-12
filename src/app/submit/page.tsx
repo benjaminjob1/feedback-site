@@ -280,7 +280,7 @@ export default function SubmitPage() {
             {step > n ? <Check size={12} /> : n}
           </div>
           {n < totalSteps && (
-            <div className={`w-10 h-px ${step > n ? "bg-primary" : "bg-border"}`} /> />
+            <div className={"w-10 h-px " + (step > n ? "bg-primary" : "bg-border")} />
           )}
         </div>
       ))}
@@ -341,7 +341,6 @@ export default function SubmitPage() {
                     </button>
                     );
                   })}
-                </div>
                 </div>
               </div>
 
@@ -448,8 +447,7 @@ export default function SubmitPage() {
                         }
                       />
                     </button>
-                  );
-                })}
+                  ))}
                 </div>
                 {starLabel && (
                   <p className="text-sm font-medium text-foreground animate-in fade-in slide-in-from-bottom-1 duration-200">
