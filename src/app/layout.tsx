@@ -38,8 +38,9 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     await fetch("/api/auth/signout", { method: "POST" });
     document.cookie = "fb_session=; path=/; max-age=0";
-    router.push("/");
+    setUser(null);
     setMenuOpen(false);
+    router.refresh();
   };
 
   return (
