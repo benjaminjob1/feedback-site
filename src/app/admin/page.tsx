@@ -368,6 +368,9 @@ export default function AdminPage() {
                             ) : null}
                             {u.role === "admin" ? (
                               <>
+                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                  Make Viewer
+                                </Button>
                                 <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
                                   Make User
                                 </Button>
