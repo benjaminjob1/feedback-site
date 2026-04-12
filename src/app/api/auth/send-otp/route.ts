@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const loginUrl = `${siteUrl}/api/auth/verify-otp?token=${ottToken}`;
 
     const subject = "🔐 Feedback Portal — Sign In Link";
-    const text = `Click below to sign in to the Feedback Portal:\n\n${loginUrl}\n\nThis link expires in 5 minutes.\nIf you didn't request this, ignore this email.`;
+    const text = `Click below to sign in to the Feedback Portal:\n\n${loginUrl}\n\nOr use this token directly:\n${ottToken}\n\nThis link expires in 5 minutes.\nIf you didn't request this, ignore this email.`;
 
     const response = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
       method: "POST",
