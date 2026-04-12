@@ -1,21 +1,23 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/auth-server";
 
 export async function GET(req: NextRequest) {
-  const { data: { user } } = await supabaseAdmin.auth.getUser();
+  const token = req.cookies.get("fb_session")?.value;
+  if (!token) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Login required" }, { status: 401 });
-  }
+  const payload = await verifySessionToken(token);
+  if (!payload) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
-  // Check user role
-  const profileRes = await supabaseAdmin
+  // Look up profile by email
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("role")
-    .eq("id", user.id)
+    .select("id, role")
+    .eq("email", payload.email.toLowerCase())
     .single();
 
-  const role = profileRes.data?.role;
+  const role = profile?.role;
+  const userId = profile?.id;
 
   let query = supabaseAdmin
     .from("feedback")
@@ -24,13 +26,11 @@ export async function GET(req: NextRequest) {
 
   if (role === "admin") {
     // Admins see everything
-    // no filter needed
   } else if (role === "viewer") {
-    // Viewers see approved + their own pending
-    query = query.or(`status.eq.approved,submitted_by.eq.${user.id}`);
+    query = query.or(`status.eq.approved,submitted_by.eq.${userId}`);
   } else {
-    // Regular users see only their own pending
-    query = query.eq("submitted_by", user.id).eq("status", "pending");
+    // Regular users see all their own feedback (for editing)
+    query = query.eq("submitted_by", userId);
   }
 
   const { data, error } = await query;
@@ -40,29 +40,62 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
+  const token = req.cookies.get("fb_session")?.value;
+  if (!token) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const payload = await verifySessionToken(token);
+  if (!payload) return NextResponse.json({ error: "Login required" }, { status: 401 });
 
-  const profileRes = await supabaseAdmin
+  // Look up profile
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("role, email_verified")
-    .eq("id", user.id)
+    .select("id, role")
+    .eq("email", payload.email.toLowerCase())
     .single();
 
-  if (!profileRes.data?.email_verified) {
-    return NextResponse.json({ error: "Please verify your email first" }, { status: 403 });
-  }
+  if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
   const body = await req.json();
-  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_other } = body;
+  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_other, edit_id } = body;
 
   if (!site || !rating) {
     return NextResponse.json({ error: "Site and rating are required" }, { status: 400 });
   }
 
+  // If editing existing feedback
+  if (edit_id) {
+    const { data, error } = await supabaseAdmin
+      .from("feedback")
+      .update({
+        rating,
+        question_easy,
+        question_improve,
+        question_bugs,
+        question_features,
+        question_other,
+      })
+      .eq("id", edit_id)
+      .eq("submitted_by", profile.id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ feedback: data, edited: true });
+  }
+
+  // Check for existing feedback on this site by this user
+  const { data: existing } = await supabaseAdmin
+    .from("feedback")
+    .select("id")
+    .eq("submitted_by", profile.id)
+    .eq("site", site)
+    .single();
+
+  if (existing) {
+    return NextResponse.json({ error: "You've already submitted feedback for this site. Use the edit option to update it.", existing_id: existing.id }, { status: 409 });
+  }
+
+  // Insert new feedback
   const { data, error } = await supabaseAdmin
     .from("feedback")
     .insert({
@@ -73,7 +106,7 @@ export async function POST(req: NextRequest) {
       question_bugs,
       question_features,
       question_other,
-      submitted_by: user.id,
+      submitted_by: profile.id,
       status: "pending",
     })
     .select()
@@ -81,5 +114,5 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ feedback: data });
+  return NextResponse.json({ feedback: data, edited: false });
 }
