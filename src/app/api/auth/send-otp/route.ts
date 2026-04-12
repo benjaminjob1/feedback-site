@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOTP, storeOTP, getUserRole } from "@/lib/auth-server";
-import axios from "axios";
 
 export const runtime = "nodejs";
 
@@ -26,17 +25,18 @@ export async function POST(req: NextRequest) {
       ? `Your admin login code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore.`
       : `Your login code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore.`;
 
-    await axios.post("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
-      to: normalizedEmail,
-      subject,
-      text,
-    }, {
+    const response = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
+      method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.AGENTMAIL_API_KEY}`,
         "Content-Type": "application/json",
       },
-      timeout: 10000,
+      body: JSON.stringify({ to: normalizedEmail, subject, text }),
     });
+
+    if (!response.ok) {
+      console.error("[send-otp] AgentMail error:", await response.text());
+    }
 
     return NextResponse.json({ success: true, message: "Check your email for a code" });
   } catch (error: any) {

@@ -43,7 +43,7 @@ export async function createSessionToken(email: string, role: string): Promise<s
 export async function verifySessionToken(token: string): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return { email: payload.email as string, role: payload.role as string };
+    return { email: payload.email as string, role: payload.role as "admin" | "viewer" | "user" };
   } catch {
     return null;
   }
