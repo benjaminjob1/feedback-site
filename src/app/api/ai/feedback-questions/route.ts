@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const RATING_LABELS: Record<number, string> = {
   1: "Poor",
@@ -9,6 +10,16 @@ const RATING_LABELS: Record<number, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const { allowed, remaining, resetIn } = checkRateLimit(ip, 5); // 5 per hour for feedback questions
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again later.", retryAfter: Math.ceil(resetIn / 1000) + "s" },
+      { status: 429 }
+    );
+  }
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body.site !== "string" || typeof body.rating !== "number") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
@@ -17,7 +28,7 @@ export async function POST(req: NextRequest) {
   const { site, rating } = body;
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", generate 2-3 specific, probing follow-up questions that would help gather deeper feedback. Each question should dig into a different aspect (e.g. what worked well, what frustrated them, what they'd change). Return ONLY valid JSON with this exact structure — no markdown, no explanation:
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", generate 2-3 specific, probing follow-up questions that would help gather deeper feedback. Return ONLY valid JSON with this exact structure:
 {"questions": [{"question": "...", "placeholder": "..."}]}`;
 
   const controller = new AbortController();
@@ -44,12 +55,11 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const errText = await res.text();
       console.error("Anthropic error:", res.status, errText);
-      return NextResponse.json({ questions: [], apiError: true });
+      return NextResponse.json({ questions: [], remaining }, { status: 500 });
     }
 
     const data = await res.json();
 
-    // Handle Anthropic's response format — content is an array of blocks
     let content = "";
     const rawContent = (data as any).content;
     if (Array.isArray(rawContent)) {
@@ -59,8 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!content) {
-      console.error("Empty content from Anthropic:", JSON.stringify(data));
-      return NextResponse.json({ questions: [] });
+      return NextResponse.json({ questions: [], remaining });
     }
 
     const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/i, "");
@@ -68,13 +77,11 @@ export async function POST(req: NextRequest) {
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      console.error("Failed to parse JSON from AI. Raw:", jsonStr.substring(0, 200));
-      return NextResponse.json({ questions: [] });
+      return NextResponse.json({ questions: [], remaining });
     }
 
     if (!Array.isArray(parsed.questions)) {
-      console.error("parsed.questions is not an array:", JSON.stringify(parsed).substring(0, 200));
-      return NextResponse.json({ questions: [] });
+      return NextResponse.json({ questions: [], remaining });
     }
 
     return NextResponse.json({
@@ -82,10 +89,11 @@ export async function POST(req: NextRequest) {
         question: typeof q.question === "string" ? q.question : "",
         placeholder: typeof q.placeholder === "string" ? q.placeholder : "",
       })),
+      remaining,
     });
   } catch (err) {
     clearTimeout(timeout);
     console.error("AI feedback-questions error:", err);
-    return NextResponse.json({ questions: [] });
+    return NextResponse.json({ questions: [], remaining });
   }
 }
