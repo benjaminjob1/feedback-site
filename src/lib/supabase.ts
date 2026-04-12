@@ -1,9 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Public keys - safe to hardcode (they identify your Supabase project, not secrets)
+const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co";
+const supabaseAnonKey = "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export const BEN_EMAIL = "benjamin.job@gwern.co.uk";
 export const SITES = [
   { value: "hub", label: "Hub", emoji: "🖥️" },
