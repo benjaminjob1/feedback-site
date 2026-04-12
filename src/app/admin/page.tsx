@@ -118,7 +118,7 @@ export default function AdminPage() {
     setAddError("");
     setAddSuccess("");
     if (!newUserEmail) return;
-    const res = await fetch("/api/admin/users", {
+    const res = await fetch("/api/admin/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: newUserEmail, role: newUserRole }),
