@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .select("id")
     .eq("email", payload.email.toLowerCase())
-    .single();
+    .single() as { data: { id: string } | null };
 
   if (!profile) {
     // Create profile if it doesn't exist (first-time setup)
