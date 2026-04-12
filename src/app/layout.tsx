@@ -84,7 +84,7 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <Link href="/login" className="hover:text-primary transition-colors">
-                  Sign In
+                  Sign In / Sign Up
                 </Link>
               )
             )}
