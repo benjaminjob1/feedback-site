@@ -1,41 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/verify-session";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
-  // Get session from cookie
+  const admin = getSupabaseAdmin();
   const token = req.cookies.get("fb_session")?.value;
-  if (!token) return NextResponse.json({ user: null });
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co";
-  const supabaseKey = "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI";
+  const { data: { user }, error: authError } = await admin.auth.getUser(token);
+  if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const res = await fetch(`${supabaseUrl}/auth/v1/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey: supabaseKey,
-    },
-  });
-
-  const user = await res.json();
-  if (!user?.id) return NextResponse.json({ user: null });
-
-  // Update user metadata
   const body = await req.json();
   const { full_name } = body;
 
-  const updateRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      apikey: supabaseKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      user_metadata: { ...user.user_metadata, full_name },
-    }),
-  });
+  // Update profile in database
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ full_name, updated_at: new Date().toISOString() })
+    .eq("id", user.id);
 
-  const updated = await updateRes.json();
-  if (updated.error) return NextResponse.json({ error: updated.error.message }, { status: 500 });
-  return NextResponse.json({ user: updated });
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+
+  return NextResponse.json({ success: true });
 }

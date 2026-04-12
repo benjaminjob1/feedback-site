@@ -1,0 +1,11 @@
+{
+  "env": {
+    "NEXT_PUBLIC_SITE_URL": "https://feedback.benjob.me",
+    "AGENTMAIL_API_KEY": "env:AGENTMAIL_API_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY": "env:SUPABASE_SERVICE_ROLE_KEY"
+  },
+  "regions": ["cdg1"],
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev"
+}

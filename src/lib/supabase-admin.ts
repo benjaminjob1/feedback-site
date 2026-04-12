@@ -1,22 +1,18 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://lvrltmuhqejoetxubvxu.supabase.co";
+let _admin: ReturnType<typeof createClient> | null = null;
 
-let _adminClient: SupabaseClient | null = null;
-
-function getAdminClient(): SupabaseClient {
-  if (!_adminClient) {
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI";
-    _adminClient = createClient(supabaseUrl, key);
+export function getSupabaseAdmin() {
+  if (!_admin) {
+    _admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
   }
-  return _adminClient;
+  return _admin;
 }
 
 export const supabaseAdmin = {
-  from: (table: string) => getAdminClient().from(table),
-  auth: {
-    getUser: () => getAdminClient().auth.getUser(),
-  },
+  get auth() { return getSupabaseAdmin().auth; },
+  from(table: string) { return getSupabaseAdmin().from(table); },
 };
-
-export const BEN_EMAIL = "benjamin.job@gwern.co.uk";

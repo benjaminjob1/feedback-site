@@ -11,19 +11,35 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://feedback.benjob.me";
+
+    // Check if user is allowlisted (admin/viewer) or allow signup
     const role = getUserRole(normalizedEmail);
     if (!role) {
-      // Don't reveal whether email is authorized - still send success to avoid enumeration
-      return NextResponse.json({ success: true, message: "Check your email for a link", token: "" });
+      // Still send a link but they won't have special access
+      const ottToken = await createOTTToken(normalizedEmail, "user");
+      const loginUrl = `${siteUrl}/api/auth/verify-otp?token=${ottToken}`;
+
+      const subject = "🔐 Feedback Portal Login Link";
+      const text = `Your Feedback Portal login code:\n\n${ottToken}\n\nOr click: ${loginUrl}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, ignore this email.`;
+
+      await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.AGENTMAIL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ to: normalizedEmail, subject, text }),
+      });
+
+      return NextResponse.json({ success: true, message: "Check your email for a link" });
     }
 
     const ottToken = await createOTTToken(normalizedEmail, role);
-    const loginUrl = `https://feedback.benjob.me/api/auth/verify-otp?token=${ottToken}`;
+    const loginUrl = `${siteUrl}/api/auth/verify-otp?token=${ottToken}`;
 
-    const subject = role === "admin" ? "🔐 BenBot Feedback Admin Login Link" : "🔐 BenBot Feedback Portal Login Link";
-    const text = role === "admin"
-      ? `Click this link to sign in (expires in 5 minutes):\n\n${loginUrl}\n\nIf you didn't request this, please ignore.`
-      : `Click this link to sign in (expires in 5 minutes):\n\n${loginUrl}\n\nIf you didn't request this, please ignore.`;
+    const subject = "🔐 Feedback Portal Login Link";
+    const text = `Your Feedback Portal login code:\n\n${ottToken}\n\nOr click this link (expires in 5 minutes):\n${loginUrl}\n\nIf you didn't request this, ignore this email.`;
 
     const response = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
       method: "POST",
