@@ -42,12 +42,14 @@ export async function POST(req: NextRequest) {
   const excludeList: string[] = Array.isArray(exclude) ? exclude : [];
 
   const requested = typeof count === "number" ? Math.min(Math.max(count, 1), 5) : 3;
+  // Request more than needed to account for similarity filtering
+  const maxToGenerate = Math.max(requested, Math.min(count * 3, 10));
 
   const existingListStr = excludeList.length > 0
     ? "Already-asked questions (DO NOT repeat or ask similar ones):\n" + excludeList.map(q => `  - "${q}"`).join("\n") + "\n"
     : "";
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}Generate EXACTLY ${requested} different follow-up questions, each covering a COMPLETELY different topic or angle. Return ONLY valid JSON:
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}Generate AT LEAST ${requested} different follow-up questions (aim for ${maxToGenerate} to account for filtering), each covering a COMPLETELY different topic or angle. Return ONLY valid JSON:
 {"questions": [{"question": "...", "placeholder": "..."}]}
 
 STRICT RULES:
