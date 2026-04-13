@@ -20,6 +20,7 @@ type Feedback = {
   question_bugs: string;
   question_features: string;
   question_other: string;
+  ai_questions?: string;
   status: string;
   created_at: string;
   submitted_by: string;
@@ -145,11 +146,75 @@ export default function HomePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {fb.question_easy && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Easy to use</p><p>{fb.question_easy}</p></div>}
-                {fb.question_improve && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Could be better</p><p>{fb.question_improve}</p></div>}
-                {fb.question_bugs && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Bugs & issues</p><p>{fb.question_bugs}</p></div>}
-                {fb.question_features && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Requested features</p><p>{fb.question_features}</p></div>}
-                {fb.question_other && <div><p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Anything else</p><p>{fb.question_other}</p></div>}
+                {fb.question_easy && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100)+"%"}} />
+                      </div>
+                      <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
+                    </div>
+                  </div>
+                )}
+                {fb.question_improve && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100)+"%"}} />
+                      </div>
+                      <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
+                    </div>
+                  </div>
+                )}
+                {fb.question_bugs && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100)+"%"}} />
+                      </div>
+                      <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
+                    </div>
+                  </div>
+                )}
+                {fb.question_features && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100)+"%"}} />
+                      </div>
+                      <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
+                    </div>
+                  </div>
+                )}
+                {fb.question_other && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
+                    <p className="text-sm">{fb.question_other}</p>
+                  </div>
+                )}
+                {fb.ai_questions ? (() => {
+                  let qa: any[] = [];
+                  try { qa = JSON.parse(fb.ai_questions); } catch {}
+                  return qa.length > 0 ? (
+                    <div className="border-t border-border pt-2 space-y-2">
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                      {qa.map((item, i) => {
+                        const question = Object.keys(item)[0];
+                        const answer = item[question];
+                        return (
+                          <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                            <p className="text-xs font-medium">{question}</p>
+                            <p className="text-xs text-muted-foreground">{answer}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null;
+                })() : null}
                 <p className="text-xs text-muted-foreground">
                   {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
