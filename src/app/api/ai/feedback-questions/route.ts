@@ -32,15 +32,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { site, rating, count } = body;
+  const { site, rating, count, exclude = [] } = body;
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
   const sliderInfo = body.sliderValues
     ? `Scale answers given:\n${SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${body.sliderValues[key] ?? "not answered"}/10`).join("\n")}`
     : "";
 
+  const excludeList = Array.isArray(exclude) ? exclude : [];
+
   const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}generate 2-3 specific, probing follow-up questions that follow up on their scale answers and dig deeper. Return ONLY valid JSON with this exact structure:
-{"questions": [{"question": "...", "placeholder": "..."}]}`;
+{"questions": [{"question": "...", "placeholder": "..."}]}
+
+IMPORTANT: Do NOT generate questions similar to these already-asked ones: ${excludeList.map(q => `"${q}"`).join(", ")}.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -95,8 +99,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ questions: [], remaining });
     }
 
+    // Filter out excluded questions
+    const filtered = parsed.questions.filter((q: any) => {
+      const qText = (q.question || "").toLowerCase().trim();
+      return !excludeList.some((ex: string) => ex.toLowerCase().trim() === qText);
+    });
+
+    const requested = typeof count === "number" ? count : 3;
     return NextResponse.json({
-      questions: parsed.questions.slice(0, 3).map((q: any) => ({
+      questions: filtered.slice(0, requested).map((q: any) => ({
         question: typeof q.question === "string" ? q.question : "",
         placeholder: typeof q.placeholder === "string" ? q.placeholder : "",
       })),
