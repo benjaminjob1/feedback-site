@@ -113,6 +113,7 @@ export async function POST(req: NextRequest) {
       question_improve,
       question_bugs,
       question_features,
+      question_bugs_slider,
       question_other,
       ai_questions: ai_questions || null,
       feedback_length: feedback_length || "standard",
