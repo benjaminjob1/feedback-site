@@ -768,15 +768,17 @@ export default function SubmitPage() {
                                     setAiAddMoreMsg("No more different questions could be generated.");
                                   } else {
                                     setAiAddMoreMsg(`Added ${newQs.length} new question${newQs.length > 1 ? "s" : ""}!`);
-                                    setTimeout(() => setAiAddMoreMsg(null), 3000);
                                   }
                                   return [...prev, ...newQs];
                                 });
                               } else {
                                 setAiAddMoreMsg("No more different questions could be generated.");
                               }
+                              // Always dismiss after 4s
+                              setTimeout(() => setAiAddMoreMsg(null), 4000);
                             } catch {
                               setAiAddMoreMsg("Failed to generate more questions. Try again.");
+                              setTimeout(() => setAiAddMoreMsg(null), 4000);
                             }
                             setAiLoading(false);
                           }}
