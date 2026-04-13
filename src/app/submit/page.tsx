@@ -221,6 +221,10 @@ export default function SubmitPage() {
     });
     setSliderValues(sliders);
 
+    // Reset all comment fields first
+    setQuickNote("");
+    setOverallComments("");
+
     // Try to parse AI questions from stored field
     if (fb.ai_questions) {
       try {
@@ -247,6 +251,7 @@ export default function SubmitPage() {
           setHasAnswersChanged(false);
         }
       } catch {}
+      setStep(2);
     } else if (fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
       // Extract from question_other text
       const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
@@ -268,7 +273,7 @@ export default function SubmitPage() {
       }
 
       setQuickNote("");
-      setOverallComments(fb.question_other || "");
+      setOverallComments(fb.question_other ? fb.question_other.replace(/\[AI Follow-ups\][\s\S]*/, "").trim() : "");
 
       setStep(2);
     }
