@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         question_bugs_slider,
         question_other,
         ai_questions: ai_questions || null,
+        slider_comments: slider_comments || null,
         feedback_length: feedback_length || "standard",
       })
       .eq("id", edit_id)
