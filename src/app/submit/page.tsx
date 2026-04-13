@@ -702,7 +702,13 @@ export default function SubmitPage() {
                               const res = await fetch("/api/ai/feedback-questions", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ site, rating, sliderValues, count: 5 - aiQuestions.length }),
+                                body: JSON.stringify({
+                                  site,
+                                  rating,
+                                  sliderValues,
+                                  count: 5 - aiQuestions.length,
+                                  exclude: aiQuestions.map(q => q.question)
+                                }),
                               });
                               const data = await res.json();
                               if (data.questions?.length > 0) {
