@@ -189,7 +189,17 @@ export default function SubmitPage() {
       } catch {}
     } else if (fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
       // Extract from question_other text
-      const match = fb.question_other.match(/\[AI Follow-ups\]\s*(\{.*\})/s);
+      const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+    const after = aiIdx >= 0 ? fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim() : "";
+    let parsed = null;
+    if (after) {
+      try { parsed = JSON.parse(after); } catch {}
+    }
+    if (parsed) {
+      const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
+      setAiQuestions(qa);
+      setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+    }
       if (match) {
         try {
           const parsed = JSON.parse(match[1]);
