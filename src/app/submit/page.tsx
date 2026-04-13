@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Star, ChevronLeft, Check, Pencil, Loader2 } from "lucide-react";
+import { Star, ChevronLeft, Check, Pencil, Loader2, Trash2 } from "lucide-react";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -182,6 +182,24 @@ export default function SubmitPage() {
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleDeleteExisting = async (fb: ExistingFeedback) => {
+    if (!confirm(`Delete your ${fb.site} feedback? This cannot be undone.`)) return;
+    try {
+      const res = await fetch("/api/feedback/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: fb.id }),
+      });
+      if (res.ok) {
+        setExistingFeedback(prev => prev.filter(f => f.id !== fb.id));
+        if (editingId === fb.id) {
+          setEditingId(null);
+          setStep(1);
+        }
+      }
+    } catch {}
   };
 
   const handleEditExisting = (fb: ExistingFeedback) => {
@@ -463,20 +481,29 @@ export default function SubmitPage() {
                     {submittedSitesList.map(s => {
                       const fb = existingFeedback.find((f: ExistingFeedback) => f.site === s.value);
                       return (
-                        <button
-                          key={s.value}
-                          onClick={() => fb && handleEditExisting(fb)}
-                          className="p-4 border border-border rounded-lg text-left hover:border-primary transition-colors relative"
-                        >
-                          <span className="text-xl">{s.emoji}</span>
-                          <span className="block mt-1 font-medium">{s.label}</span>
-                          <Pencil size={12} className="absolute top-3 right-3 text-muted-foreground" />
-                          {fb && (
-                            <span className="block text-xs text-muted-foreground mt-1">
-                              ★ {fb.rating}/5 — {fb.status}
-                            </span>
-                          )}
-                        </button>
+                        <div key={s.value} className="p-4 border border-border rounded-lg relative">
+                          <div className="flex items-start gap-2">
+                            <button
+                              onClick={() => fb && handleEditExisting(fb)}
+                              className="flex-1 text-left hover:border-primary transition-colors"
+                            >
+                              <span className="text-xl">{s.emoji}</span>
+                              <span className="block mt-1 font-medium">{s.label}</span>
+                              {fb && (
+                                <span className="block text-xs text-muted-foreground mt-1">
+                                  ★ {fb.rating}/5 — {fb.status}
+                                </span>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => fb && handleDeleteExisting(fb)}
+                              className="text-muted-foreground hover:text-red-500 p-1"
+                              title="Delete feedback"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
