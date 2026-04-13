@@ -70,6 +70,8 @@ export default function SubmitPage() {
   // Wizard state
   const [step, setStep] = useState<Step>(1);
   const [feedbackLength, setFeedbackLength] = useState<FeedbackLength>("standard");
+  const [originalFeedbackLength, setOriginalFeedbackLength] = useState<FeedbackLength | null>(null);
+  const [showLengthWarning, setShowLengthWarning] = useState(false);
   const [site, setSite] = useState("");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -213,6 +215,8 @@ export default function SubmitPage() {
     setHoverRating(0);
     const len = (fb.feedback_length as FeedbackLength) || "standard";
     setFeedbackLength(len);
+    setOriginalFeedbackLength(len);
+    setShowLengthWarning(false);
 
     // Restore slider values from stored text fields
     const sliders: Record<string, number> = {};
@@ -547,6 +551,49 @@ export default function SubmitPage() {
           ══════════════════════════════════════════ */}
           {step === 2 && (
             <div className="space-y-6">
+              {/* Edit mode: length picker */}
+              {editingId && (
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Feedback length</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LENGTH_OPTIONS.map(opt => {
+                      const isDisabled = opt.value === "detailed" && !aiAvailable;
+                      const isDowngrade = originalFeedbackLength === "detailed" && (opt.value === "standard" || opt.value === "quick")
+                        || originalFeedbackLength === "standard" && opt.value === "quick";
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => {
+                            if (isDowngrade) {
+                              setShowLengthWarning(true);
+                            } else {
+                              setShowLengthWarning(false);
+                            }
+                            setFeedbackLength(opt.value);
+                          }}
+                          disabled={isDisabled}
+                          className={"p-3 border rounded-lg text-center transition-all " +
+                            (feedbackLength === opt.value
+                              ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                              : isDisabled
+                              ? "border-border opacity-50 cursor-not-allowed"
+                              : "border-border hover:border-primary/60")}
+                        >
+                          <div className="text-xl">{opt.emoji}</div>
+                          <div className="text-xs font-medium mt-1">{opt.label}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {showLengthWarning && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-sm p-3 rounded-md">
+                      ⚠️ Switching to {feedbackLength} may hide some of your feedback (scales, AI questions, or comments). You can switch back at any time to see all your data.
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setStep(1)}
