@@ -205,10 +205,22 @@ export default function SubmitPage() {
         const parsed = JSON.parse(fb.ai_questions);
         if (Array.isArray(parsed)) {
           setAiQuestions(parsed);
+          if (parsed.length > 0) {
+            setInitialSliderValues({ ...sliderValues });
+            setInitialRating(rating);
+            setInitialQuickNote(quickNote || "");
+            setAiLoaded(true);
+            setHasAnswersChanged(false);
+          }
         } else if (typeof parsed === "object" && parsed !== null) {
           const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
           setAiQuestions(qa);
           setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+          setInitialSliderValues({ ...sliderValues });
+          setInitialRating(rating);
+          setInitialQuickNote(quickNote || "");
+          setAiLoaded(true);
+          setHasAnswersChanged(false);
         }
       } catch {}
     } else if (fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
@@ -223,6 +235,11 @@ export default function SubmitPage() {
         const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
         setAiQuestions(qa);
         setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+        setInitialSliderValues({ ...sliderValues });
+        setInitialRating(rating);
+        setInitialQuickNote(quickNote || "");
+        setAiLoaded(true);
+        setHasAnswersChanged(false);
       }
 
       setQuickNote("");
