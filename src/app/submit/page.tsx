@@ -539,8 +539,8 @@ export default function SubmitPage() {
                         className="w-full accent-primary"
                       />
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{opt.key === "question_bugs_slider" ? "Many bugs" : "Poor"}</span>
-                        <span>{opt.key === "question_bugs_slider" ? "No bugs" : "Excellent"}</span>
+                        <span>{key === "question_bugs_slider" ? "Many bugs" : "Poor"}</span>
+                        <span>{key === "question_bugs_slider" ? "No bugs" : "Excellent"}</span>
                       </div>
                       <Textarea
                         placeholder={`Optional comment on ${label.toLowerCase()}...`}
@@ -592,8 +592,8 @@ export default function SubmitPage() {
                         className="w-full accent-primary"
                       />
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{opt.key === "question_bugs_slider" ? "Many bugs" : "Poor"}</span>
-                        <span>{opt.key === "question_bugs_slider" ? "No bugs" : "Excellent"}</span>
+                        <span>{key === "question_bugs_slider" ? "Many bugs" : "Poor"}</span>
+                        <span>{key === "question_bugs_slider" ? "No bugs" : "Excellent"}</span>
                       </div>
                       <Textarea
                         placeholder={`Optional comment on ${label.toLowerCase()}...`}
