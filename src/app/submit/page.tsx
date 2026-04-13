@@ -760,12 +760,16 @@ export default function SubmitPage() {
                                   site,
                                   rating,
                                   sliderValues,
+                                  sliderComments,
+                                  aiAnswers,
                                   count: Math.min(5, (5 - aiQuestions.length) * 3),
                                   exclude: aiQuestions.map(q => q.question)
                                 }),
                               });
                               const data = await res.json();
-                              if (data.questions?.length > 0) {
+                              if (!res.ok) {
+                                setAiAddMoreMsg(data.error || "Failed to generate more questions.");
+                              } else if (data.questions?.length > 0) {
                                 setAiQuestions(prev => {
                                   const existing = prev.map(q => q.question.toLowerCase().trim());
                                   const filtered = (data.questions || []).filter((q: { question: string }) => !existing.includes(q.question.toLowerCase().trim()));

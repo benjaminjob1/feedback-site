@@ -32,11 +32,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { site, rating, count, exclude = [] } = body;
+  const { site, rating, sliderValues, sliderComments, aiAnswers, count, exclude = [] } = body;
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
-  const sliderInfo = body.sliderValues
-    ? "Scale answers given:\n" + SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${body.sliderValues[key] ?? "not answered"}/10`).join("\n")
+  const sliderInfo = sliderValues
+    ? "Scale answers given:\n" + SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${sliderValues[key] ?? "not answered"}/10`).join("\n")
+    : "";
+
+  const sliderCommentsInfo = sliderComments && typeof sliderComments === "object"
+    ? "User comments on scales:\n" + Object.entries(sliderComments).filter(([, v]) => typeof v === "string" && v.trim()).map(([k, v]) => `  - ${k}: "${v}"`).join("\n")
+    : "";
+
+  const aiAnswersInfo = aiAnswers && typeof aiAnswers === "object"
+    ? "Already-asked AI follow-up questions and answers:\n" + Object.entries(aiAnswers).filter(([, v]) => typeof v === "string" && v.trim()).map(([k, v]) => `  - Q: "${k}"\n    A: "${v}"`).join("\n")
     : "";
 
   const excludeList: string[] = Array.isArray(exclude) ? exclude : [];
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     ? "Already-asked questions (DO NOT repeat or ask similar ones):\n" + excludeList.map(q => `  - "${q}"`).join("\n") + "\n"
     : "";
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}Generate AT LEAST ${requested} different follow-up questions (aim for ${maxToGenerate} to account for filtering), each covering a COMPLETELY different topic or angle. Return ONLY valid JSON:
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}${sliderCommentsInfo ? sliderCommentsInfo + "\n" : ""}${aiAnswersInfo ? aiAnswersInfo + "\n" : ""}Generate AT LEAST ${requested} different follow-up questions (aim for ${maxToGenerate} to account for filtering), each covering a COMPLETELY different topic or angle. Return ONLY valid JSON:
 {"questions": [{"question": "...", "placeholder": "..."}]}
 
 STRICT RULES:
