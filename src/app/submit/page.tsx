@@ -25,6 +25,8 @@ type ExistingFeedback = {
   question_other: string;
   feedback_length?: FeedbackLength;
   ai_questions?: string;
+  slider_comments?: string;
+  question_bugs_slider?: string;
   status: string;
   created_at: string;
 };
