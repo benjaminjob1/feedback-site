@@ -81,10 +81,11 @@ export default function HomePage() {
   const isViewer = user?.role === "viewer";
   const canSeeFeedback = user && (isAdmin || isViewer);
 
-  // Admin: all feedback. Viewer: approved only. Regular user: own feedback only.
+  // Admin: all feedback. Viewer: approved + own. Regular user: own only.
   const ownFeedback = user ? feedbackList.filter(f => f.submitted_by === user.id) : [];
   const approved = feedbackList.filter(f => f.status === "approved");
-  const allFeedback = isAdmin ? feedbackList : isViewer ? approved : ownFeedback;
+  const merged = [...approved, ...ownFeedback];
+  const allFeedback = isAdmin ? feedbackList : isViewer ? Object.values(Object.fromEntries(merged.map(f => [f.id, f]))) : ownFeedback;
 
   const siteEmoji = (site: string) => SITES.find(s => s.value === site)?.emoji || "📝";
 
