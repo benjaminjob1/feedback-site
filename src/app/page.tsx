@@ -169,11 +169,11 @@ export default function HomePage() {
                   };
                   return (
                     <>
-                      {fb.question_easy ? renderBar("question_easy", "EASY TO USE", fb.question_easy) : null}
-                      {fb.question_improve ? renderBar("question_improve", "DESIGN & LAYOUT", fb.question_improve) : null}
-                      {fb.question_bugs ? renderBar("question_bugs", "SPEED & PERFORMANCE", fb.question_bugs) : null}
-                      {fb.question_features ? renderBar("question_features", "FEATURES & FUNCTIONALITY", fb.question_features) : null}
-                      {(fb as any).question_bugs_slider ? renderBar("question_bugs_slider", "BUGS & ISSUES NOT PRESENT", (fb as any).question_bugs_slider) : null}
+                      {fb.question_easy !== undefined && fb.question_easy !== null ? renderBar("question_easy", "EASY TO USE", fb.question_easy) : null}
+                      {fb.question_improve !== undefined && fb.question_improve !== null ? renderBar("question_improve", "DESIGN & LAYOUT", fb.question_improve) : null}
+                      {fb.question_bugs !== undefined && fb.question_bugs !== null ? renderBar("question_bugs", "SPEED & PERFORMANCE", fb.question_bugs) : null}
+                      {fb.question_features !== undefined && fb.question_features !== null ? renderBar("question_features", "FEATURES & FUNCTIONALITY", fb.question_features) : null}
+                      {(fb as any).question_bugs_slider !== undefined && (fb as any).question_bugs_slider !== null ? renderBar("question_bugs_slider", "BUGS & ISSUES NOT PRESENT", (fb as any).question_bugs_slider) : null}
                     </>
                   );
                 })()}
