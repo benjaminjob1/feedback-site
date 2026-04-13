@@ -147,119 +147,59 @@ export default function HomePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {fb.question_easy && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100)+"%"}} />
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
-                    </div>
-                  </div>
-                )}
-                {fb.question_improve && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100)+"%"}} />
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
-                    </div>
-                  </div>
-                )}
-                {fb.question_bugs && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100)+"%"}} />
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
-                    </div>
-                  </div>
-                )}
-                {fb.question_features && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100)+"%"}} />
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
-                    </div>
-                  </div>
-                )}
-                {(fb as any).question_bugs_slider && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES NOT PRESENT</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{width: (Number((fb as any).question_bugs_slider)/10*100)+"%"}} />
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right">{(fb as any).question_bugs_slider}</span>
-                    </div>
-                  </div>
-                )}
                 {(() => {
-                  const hasAI = fb.question_other && fb.question_other.includes("[AI Follow-ups]");
-                  if (hasAI) {
-                    // Split actual comment from AI Q&A
-                    const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-                    const commentText = fb.question_other.substring(0, aiIdx).trim();
-                    const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-                    let qa: any[] = [];
-                    try { qa = JSON.parse(aiText); } catch {}
-                    const entries = Object.entries(qa);
+                  const sliderComments: Record<string, string> = {};
+                  if ((fb as any).slider_comments) {
+                    try { Object.assign(sliderComments, JSON.parse((fb as any).slider_comments)); } catch {}
+                  }
+                  const renderBar = (key: string, label: string, val: string) => {
+                    const comment = sliderComments[key];
                     return (
-                      <div className="space-y-3">
-                        {commentText ? (
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
-                            <p className="text-sm">{commentText}</p>
+                      <div key={key}>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">{label}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(val)/10*100)+"%"}} />
                           </div>
-                        ) : null}
-                        {entries.length > 0 ? (
-                          <div className="border-t border-border pt-2 space-y-2">
-                            <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                            {entries.map(([question, answer], i) => (
-                              <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                                <p className="text-xs font-medium">{question}</p>
-                                <p className="text-xs text-muted-foreground">{answer}</p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
+                          <span className="text-xs font-medium w-8 text-right">{val}</span>
+                        </div>
+                        {comment ? <p className="text-xs text-muted-foreground mt-1">&ldquo;{comment}&rdquo;</p> : null}
                       </div>
                     );
-                  }
-                  return fb.question_other ? (
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
-                      <p className="text-sm">{fb.question_other}</p>
-                    </div>
-                  ) : null;
+                  };
+                  return (
+                    <>
+                      {fb.question_easy ? renderBar("question_easy", "EASY TO USE", fb.question_easy) : null}
+                      {fb.question_improve ? renderBar("question_improve", "DESIGN & LAYOUT", fb.question_improve) : null}
+                      {fb.question_bugs ? renderBar("question_bugs", "SPEED & PERFORMANCE", fb.question_bugs) : null}
+                      {fb.question_features ? renderBar("question_features", "FEATURES & FUNCTIONALITY", fb.question_features) : null}
+                      {(fb as any).question_bugs_slider ? renderBar("question_bugs_slider", "BUGS & ISSUES NOT PRESENT", (fb as any).question_bugs_slider) : null}
+                    </>
+                  );
                 })()}
-                {fb.ai_questions ? (() => {
-                  let qaObj: Record<string, string> = {};
-                  try { qaObj = JSON.parse(fb.ai_questions); } catch {}
-                  const entries = Object.entries(qaObj);
-                  return entries.length > 0 ? (
+                {fb.question_other ? (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">COMMENTS</p>
+                    <p className="text-sm">{fb.question_other}</p>
+                  </div>
+                ) : null}
+                {(fb as any).ai_questions ? (() => {
+                  let qa: any[] = [];
+                  try { qa = JSON.parse((fb as any).ai_questions); } catch {}
+                  if (!Array.isArray(qa)) qa = [];
+                  if (qa.length === 0) return null;
+                  return (
                     <div className="border-t border-border pt-2 space-y-2">
                       <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                      {entries.map(([question, answer], i) => (
+                      {qa.map((item: any, i: number) => (
                         <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                          <p className="text-xs font-medium">{question}</p>
-                          <p className="text-xs text-muted-foreground">{answer}</p>
+                          <p className="text-xs font-medium">{item.question || String(i)}</p>
+                          <p className="text-xs text-muted-foreground">{item.answer || item.placeholder || ""}</p>
                         </div>
                       ))}
                     </div>
-                  ) : null;
+                  );
                 })() : null}
-                <p className="text-xs text-muted-foreground">
-                  {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                </p>
               </CardContent>
             </Card>
           ))}
