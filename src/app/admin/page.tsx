@@ -303,7 +303,7 @@ export default function AdminPage() {
                         <div className="space-y-1">
                           <p className="text-muted-foreground text-xs uppercase tracking-wide">SLIDER COMMENTS</p>
                           {entries.map(([k, v]) => (
-                            <p key={k} className="text-xs text-muted-foreground italic">"{v}"</p>
+                            <p key={k} className="text-xs text-muted-foreground italic">&ldquo;{v}&rdquo;</p>
                           ))}
                         </div>
                       );
