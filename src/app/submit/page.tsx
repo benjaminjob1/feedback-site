@@ -667,6 +667,27 @@ export default function SubmitPage() {
                         >
                           ⚠️ Answers changed — Regenerate AI questions?
                         </button>
+                      ) : aiLoaded && aiQuestions.length > 0 && aiQuestions.length < 5 && (
+                        <button
+                          onClick={async () => {
+                            setAiLoading(true);
+                            try {
+                              const res = await fetch("/api/ai/feedback-questions", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ site, rating, sliderValues, count: 5 - aiQuestions.length }),
+                              });
+                              const data = await res.json();
+                              if (data.questions?.length > 0) {
+                                setAiQuestions(prev => [...prev, ...data.questions.slice(0, 5 - prev.length)]);
+                              }
+                            } catch {}
+                            setAiLoading(false);
+                          }}
+                          className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                        >
+                          + Add more AI questions ({5 - aiQuestions.length} more available)
+                        </button>
                       )}
                       {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && !Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
                         <span className="text-xs text-muted-foreground">
