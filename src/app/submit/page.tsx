@@ -128,24 +128,18 @@ export default function SubmitPage() {
   const [initialQuickNote, setInitialQuickNote] = useState("");
   const [aiLoaded, setAiLoaded] = useState(false);
   const [hasAnswersChanged, setHasAnswersChanged] = useState(false);
-  const [aiDataChanged, setAiDataChanged] = useState(false);
 
-  // Mark data as changed when user moves a slider after AI questions loaded
+  // Mark data as changed when user moves a slider, rating, or quick note after AI questions loaded
   useEffect(() => {
-    if (step === 4 && aiQuestions.length > 0) {
-      setAiDataChanged(true);
-    }
-  }, [sliderValues]);
+    if (aiLoaded) {
+      const slidersMatch = Object.keys(sliderValues).every(k => sliderValues[k] === initialSliderValues[k]) &&
+                         Object.keys(initialSliderValues).every(k => sliderValues[k] === initialSliderValues[k]);
+      const ratingMatch = rating === initialRating;
+      const quickNoteMatch = quickNote === initialQuickNote;
 
-  useEffect(() => {
-    if (step === 4 && aiQuestions.length > 0 && !aiLoaded) {
-      setInitialSliderValues({ ...sliderValues });
-      setInitialRating(rating);
-      setInitialQuickNote(quickNote || "");
-      setAiLoaded(true);
-      setAiDataChanged(false);
+      setHasAnswersChanged(!slidersMatch || !ratingMatch || !quickNoteMatch);
     }
-  }, [step]);
+  }, [sliderValues, rating, quickNote, aiLoaded, initialSliderValues, initialRating, initialQuickNote]);
 
   useEffect(() => {
     if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
@@ -166,8 +160,10 @@ export default function SubmitPage() {
       setAiQuestions(data.questions || []);
       if (data.questions?.length > 0) {
         setInitialSliderValues({ ...sliderValues });
+        setInitialRating(rating);
+        setInitialQuickNote(quickNote || "");
         setAiLoaded(true);
-        setAiDataChanged(false);
+        setHasAnswersChanged(false);
       }
     } catch {
       setAiError(true);
@@ -661,7 +657,7 @@ export default function SubmitPage() {
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) ? (
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && hasAnswersChanged ? (
                         <button
                           onClick={() => {
                             if (confirm("Regenerate AI questions? Previous answers will be lost.")) {
@@ -694,7 +690,7 @@ export default function SubmitPage() {
                           + Add more AI questions ({5 - aiQuestions.length} more available)
                         </button>
                       )}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && !Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && !hasAnswersChanged && (
                         <span className="text-xs text-muted-foreground">
                           {aiQuestions.length} question{aiQuestions.length !== 1 ? "s" : ""} loaded from previous submission
                         </span>
