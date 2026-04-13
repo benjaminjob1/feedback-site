@@ -124,6 +124,13 @@ export default function SubmitPage() {
   // Track if user changed any field since loading AI questions
   const [aiDataChanged, setAiDataChanged] = useState(false);
 
+  // Mark data as changed when user moves a slider after AI questions loaded
+  useEffect(() => {
+    if (step === 4 && aiQuestions.length > 0) {
+      setAiDataChanged(true);
+    }
+  }, [sliderValues]);
+
   useEffect(() => {
     if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
       fetchAIQuestions();
@@ -614,9 +621,17 @@ export default function SubmitPage() {
               {feedbackLength === "detailed" && step === 4 && (
                 <div className="space-y-5">
                   <div className="border-t border-border pt-4 space-y-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                      {aiDataChanged && !aiLoading && aiQuestions.length > 0 && (
+                        <button
+                          onClick={() => { setAiDataChanged(false); fetchAIQuestions(); }}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Regenerate based on answers?
+                        </button>
+                      )}
                     </div>
 
                     {aiLoading && (
