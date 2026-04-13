@@ -22,6 +22,7 @@ type Feedback = {
   question_other: string;
   ai_questions?: string;
   question_bugs_slider?: string;
+  slider_comments?: string;
   status: string;
   created_at: string;
   submitted_by: string;

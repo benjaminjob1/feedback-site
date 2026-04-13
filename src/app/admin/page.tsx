@@ -254,22 +254,6 @@ export default function AdminPage() {
                       </>
                     );
                   })()}
-                  {/* Slider comments */}
-                  {fb.slider_comments ? (() => {
-                    try {
-                      const sc: Record<string, string> = JSON.parse(fb.slider_comments);
-                      const entries = Object.entries(sc).filter(([, v]) => v.trim());
-                      if (entries.length === 0) return null;
-                      return (
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs uppercase tracking-wide">SLIDER COMMENTS</p>
-                          {entries.map(([k, v]) => (
-                            <p key={k} className="text-xs text-muted-foreground italic">&ldquo;{v}&rdquo;</p>
-                          ))}
-                        </div>
-                      );
-                    } catch { return null; }
-                  })() : null}
                   {/* Overall comments (no AI data - that's in ai_questions) */}
                   {fb.question_other ? (
                     <div>
