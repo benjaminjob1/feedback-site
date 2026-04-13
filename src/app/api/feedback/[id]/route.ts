@@ -1,12 +1,20 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/auth-server";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { data: { user } } = await supabaseAdmin.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const token = req.cookies.get("fb_session")?.value;
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const callerProfile = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
-  if (callerProfile.data?.role !== "admin") {
+  const payload = await verifySessionToken(token);
+  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("email", payload.email.toLowerCase())
+    .single();
+  if (profile?.role !== "admin") {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
 
@@ -30,11 +38,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { data: { user } } = await supabaseAdmin.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const token = req.cookies.get("fb_session")?.value;
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const callerProfile = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
-  if (callerProfile.data?.role !== "admin") {
+  const payload = await verifySessionToken(token);
+  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("email", payload.email.toLowerCase())
+    .single();
+  if (profile?.role !== "admin") {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
 
