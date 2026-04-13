@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { site, rating } = body;
+  const { site, rating, count } = body;
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
   const sliderInfo = body.sliderValues
