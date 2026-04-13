@@ -200,15 +200,6 @@ export default function SubmitPage() {
       setAiQuestions(qa);
       setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
     }
-      if (match) {
-        try {
-          const parsed = JSON.parse(match[1]);
-          const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
-          setAiQuestions(qa);
-          setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
-        } catch {}
-      }
-    }
 
     setQuickNote("");
     setOverallComments(fb.question_other || "");
