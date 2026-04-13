@@ -209,15 +209,15 @@ export default function SubmitPage() {
   };
 
   const handleEditExisting = (fb: ExistingFeedback) => {
-    setEditingId(fb.id);
-    setSite(fb.site);
+    const len = (fb.feedback_length as FeedbackLength) || "standard";
+    setOriginalFeedbackLength(len);
+    setShowLengthWarning(false);
+    setFeedbackLength(len);
     setRating(fb.rating);
     setDisplayRating(fb.rating);
     setHoverRating(0);
-    const len = (fb.feedback_length as FeedbackLength) || "standard";
-    setFeedbackLength(len);
-    setOriginalFeedbackLength(len);
-    setShowLengthWarning(false);
+    setSite(fb.site);
+    setEditingId(fb.id);
 
     // Restore slider values from stored text fields
     const sliders: Record<string, number> = {};
@@ -426,7 +426,7 @@ export default function SubmitPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Submit Feedback</h1>
+        <h1 className="text-3xl font-bold">Submit / Edit Feedback</h1>
         <p className="text-muted-foreground mt-1">Help improve Ben&apos;s projects</p>
       </div>
 
@@ -598,7 +598,16 @@ export default function SubmitPage() {
 
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setStep(1);
+                    if (editingId) {
+                      setEditingId(null);
+                      setSite("");
+                      setFeedbackLength("standard");
+                      setOriginalFeedbackLength(null);
+                      setShowLengthWarning(false);
+                    }
+                  }}
                   className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
                   <ChevronLeft size={14} /> Back
@@ -685,7 +694,7 @@ export default function SubmitPage() {
                     />
                   </div>
                   <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                    {loading ? "Saving..." : editingId ? "Submit / Edit Feedback" : "Submit Feedback"}
                   </Button>
                 </div>
               )}
@@ -738,7 +747,7 @@ export default function SubmitPage() {
                   </div>
 
                   <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                    {loading ? "Saving..." : editingId ? "Submit / Edit Feedback" : "Submit Feedback"}
                   </Button>
                 </div>
               )}
@@ -923,7 +932,7 @@ export default function SubmitPage() {
                   </div>
 
                   <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                    {loading ? "Saving..." : editingId ? "Submit / Edit Feedback" : "Submit Feedback"}
                   </Button>
                 </div>
               )}
