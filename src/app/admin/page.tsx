@@ -226,73 +226,34 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  {fb.question_easy ? (() => {
+                  {(() => {
                     const sliderComments: Record<string, string> = {};
-                    if (fb.slider_comments) { try { (void JSON.parse(fb.slider_comments as string)); } catch {} }
-                    return (
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100) + "%"}} />
+                    if (fb.slider_comments) { try { Object.assign(sliderComments, JSON.parse(fb.slider_comments)); } catch {} }
+                    const renderBar = (key: string, label: string, val: string) => {
+                      const comment = sliderComments[key];
+                      return (
+                        <div key={key}>
+                          <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">{label}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                              <div className="h-full bg-primary rounded-full" style={{width: (Number(val)/10*100) + "%"}} />
+                            </div>
+                            <span className="text-xs font-medium w-8 text-right">{val}</span>
                           </div>
-                          <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
+                          {comment ? <p className="text-xs text-muted-foreground mt-1">&ldquo;{comment}&rdquo;</p> : null}
                         </div>
-                      </div>
-                    );
-                  })() : null}
-                  {fb.question_improve ? (() => {
+                      );
+                    };
                     return (
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100) + "%"}} />
-                          </div>
-                          <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
-                        </div>
-                      </div>
+                      <>
+                        {fb.question_easy ? renderBar("question_easy", "EASY TO USE", fb.question_easy) : null}
+                        {fb.question_improve ? renderBar("question_improve", "DESIGN & LAYOUT", fb.question_improve) : null}
+                        {fb.question_bugs ? renderBar("question_bugs", "SPEED & PERFORMANCE", fb.question_bugs) : null}
+                        {fb.question_features ? renderBar("question_features", "FEATURES & FUNCTIONALITY", fb.question_features) : null}
+                        {fb.question_bugs_slider ? renderBar("question_bugs_slider", "BUGS & ISSUES NOT PRESENT", fb.question_bugs_slider) : null}
+                      </>
                     );
-                  })() : null}
-                  {fb.question_bugs ? (() => {
-                    return (
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100) + "%"}} />
-                          </div>
-                          <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
-                        </div>
-                      </div>
-                    );
-                  })() : null}
-                  {fb.question_features ? (() => {
-                    return (
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100) + "%"}} />
-                          </div>
-                          <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
-                        </div>
-                      </div>
-                    );
-                  })() : null}
-                  {fb.question_bugs_slider ? (() => {
-                    return (
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES NOT PRESENT</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs_slider)/10*100) + "%"}} />
-                          </div>
-                          <span className="text-xs font-medium w-8 text-right">{fb.question_bugs_slider}</span>
-                        </div>
-                      </div>
-                    );
-                  })() : null}
+                  })()}
                   {/* Slider comments */}
                   {fb.slider_comments ? (() => {
                     try {
