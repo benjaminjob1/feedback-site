@@ -688,9 +688,11 @@ export default function SubmitPage() {
                               });
                               const data = await res.json();
                               if (data.questions?.length > 0) {
-                                const existing = prev.map(q => q.question.toLowerCase().trim());
-                                const filtered = data.questions.filter(q => !existing.includes(q.question.toLowerCase().trim()));
-                                setAiQuestions(prev => [...prev, ...filtered.slice(0, 5 - prev.length)]);
+                                setAiQuestions(prev => {
+                                  const existing = prev.map(q => q.question.toLowerCase().trim());
+                                  const filtered = (data.questions || []).filter((q: { question: string }) => !existing.includes(q.question.toLowerCase().trim()));
+                                  return [...prev, ...filtered.slice(0, 5 - prev.length)];
+                                });
                               }
                             } catch {}
                             setAiLoading(false);
