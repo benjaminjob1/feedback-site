@@ -129,6 +129,7 @@ export default function SubmitPage() {
   const [aiLoaded, setAiLoaded] = useState(false);
   const [hasAnswersChanged, setHasAnswersChanged] = useState(false);
   const [aiPreloaded, setAiPreloaded] = useState(false); // true if loaded from existing feedback
+  const [aiAddMoreMsg, setAiAddMoreMsg] = useState<string | null>(null); // feedback after add more
 
   // Mark data as changed when user moves a slider, rating, or quick note after AI questions loaded
   useEffect(() => {
@@ -735,10 +736,11 @@ export default function SubmitPage() {
                           ⚠️ Answers changed — Regenerate AI questions?
                         </button>
                       )}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && aiQuestions.length < 5 && (
+                      {step === 4 && aiLoaded && aiQuestions.length > 0 && aiQuestions.length < 5 && !aiLoading && (
                         <button
                           onClick={async () => {
                             setAiLoading(true);
+                            setAiAddMoreMsg(null);
                             try {
                               const res = await fetch("/api/ai/feedback-questions", {
                                 method: "POST",
@@ -747,7 +749,7 @@ export default function SubmitPage() {
                                   site,
                                   rating,
                                   sliderValues,
-                                  count: Math.min(5, (5 - aiQuestions.length) * 3), // request extra to survive filtering
+                                  count: Math.min(5, (5 - aiQuestions.length) * 3),
                                   exclude: aiQuestions.map(q => q.question)
                                 }),
                               });
@@ -762,16 +764,29 @@ export default function SubmitPage() {
                                     newQs.forEach((_: any, i: number) => { updated[prev.length + i] = ""; });
                                     return updated;
                                   });
+                                  if (newQs.length === 0) {
+                                    setAiAddMoreMsg("No more different questions could be generated.");
+                                  } else {
+                                    setAiAddMoreMsg(`Added ${newQs.length} new question${newQs.length > 1 ? "s" : ""}!`);
+                                    setTimeout(() => setAiAddMoreMsg(null), 3000);
+                                  }
                                   return [...prev, ...newQs];
                                 });
+                              } else {
+                                setAiAddMoreMsg("No more different questions could be generated.");
                               }
-                            } catch {}
+                            } catch {
+                              setAiAddMoreMsg("Failed to generate more questions. Try again.");
+                            }
                             setAiLoading(false);
                           }}
                           className="text-xs text-orange-500 hover:text-orange-600 font-medium"
                         >
                           + Add more AI questions ({5 - aiQuestions.length} more available)
                         </button>
+                      )}
+                      {aiAddMoreMsg && (
+                        <p className="text-xs text-muted-foreground">{aiAddMoreMsg}</p>
                       )}
                       {step === 4 && !aiLoading && aiLoaded && aiPreloaded && aiQuestions.length > 0 && !hasAnswersChanged && (
                         <span className="text-xs text-muted-foreground">
