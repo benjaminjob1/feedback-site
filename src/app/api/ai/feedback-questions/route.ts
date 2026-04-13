@@ -41,17 +41,21 @@ export async function POST(req: NextRequest) {
 
   const excludeList: string[] = Array.isArray(exclude) ? exclude : [];
 
-  const requested = typeof count === "number" ? Math.min(count, 5) : 3;
-  const maxToRequest = Math.max(requested * 2, 5);
+  const requested = typeof count === "number" ? Math.min(Math.max(count, 1), 5) : 3;
 
   const existingListStr = excludeList.length > 0
     ? "Already-asked questions (DO NOT repeat or ask similar ones):\n" + excludeList.map(q => `  - "${q}"`).join("\n") + "\n"
     : "";
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}generate ${maxToRequest} specific, probing follow-up questions that are COMPLETELY DIFFERENT from any already listed above. Return ONLY valid JSON with this exact structure:
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}Generate EXACTLY ${requested} different follow-up questions, each covering a COMPLETELY different topic or angle. Return ONLY valid JSON:
 {"questions": [{"question": "...", "placeholder": "..."}]}
 
-STRICT RULE: Every generated question must be meaningfully different from all existing questions. Do not rephrase, restate, or approach the same topic as any existing question.`;
+STRICT RULES:
+- Each question MUST be on a completely different topic from all others
+- Do NOT ask about the same feature, aspect, or theme as any existing question
+- Do not rephrase or restate the same idea in different words
+- If an existing question covers "ease of use", do not ask about "usability" or "user-friendliness"
+- Think about what DIFFERENT areas could be explored: specific examples, outcomes, comparisons, priorities, suggestions, etc.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
