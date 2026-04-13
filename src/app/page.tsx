@@ -178,12 +178,17 @@ export default function HomePage() {
                     </>
                   );
                 })()}
-                {fb.question_other ? (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">COMMENTS</p>
-                    <p className="text-sm">{fb.question_other}</p>
-                  </div>
-                ) : null}
+                {(() => {
+                  const otherText = fb.question_other
+                    ? fb.question_other.replace(/\[AI Follow-ups\][\s\S]*/, "").trim()
+                    : "";
+                  return otherText ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">COMMENTS</p>
+                      <p className="text-sm">{otherText}</p>
+                    </div>
+                  ) : null;
+                })()}
                 {(fb as any).ai_questions ? (() => {
                   let qa: any[] = [];
                   try { qa = JSON.parse((fb as any).ai_questions); } catch {}
@@ -192,12 +197,39 @@ export default function HomePage() {
                   return (
                     <div className="border-t border-border pt-2 space-y-2">
                       <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                      {qa.map((item: any, i: number) => (
-                        <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                          <p className="text-xs font-medium">{item.question || String(i)}</p>
-                          <p className="text-xs text-muted-foreground">{item.answer || item.placeholder || ""}</p>
-                        </div>
-                      ))}
+                      {qa.map((item: any, i: number) => {
+                        const question = item.question || (Object.keys(item)[0]);
+                        const answer = item.answer || item[question] || "";
+                        return (
+                          <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                            <p className="text-xs font-medium">{question || String(i)}</p>
+                            <p className="text-xs text-muted-foreground">{answer}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })() : null}
+                {((!fb.ai_questions || (() => { try { return JSON.parse((fb as any).ai_questions || "[]").length === 0; } catch { return true; } })())) && fb.question_other && fb.question_other.includes("[AI Follow-ups]") ? (() => {
+                  const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+                  const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
+                  let qa: any[] = [];
+                  try { qa = JSON.parse(aiText); } catch {}
+                  if (!Array.isArray(qa)) qa = [];
+                  if (qa.length === 0) return null;
+                  return (
+                    <div className="border-t border-border pt-2 space-y-2">
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                      {qa.map((item: any, i: number) => {
+                        const question = item.question || (Object.keys(item)[0]);
+                        const answer = item.answer || item[question] || "";
+                        return (
+                          <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                            <p className="text-xs font-medium">{question || String(i)}</p>
+                            <p className="text-xs text-muted-foreground">{answer}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })() : null}
