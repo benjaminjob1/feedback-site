@@ -267,34 +267,18 @@ export default function AdminPage() {
                     ) : null;
                   })()}
 
-                  {fb.ai_questions ? (() => {
+                  {/* AI Q&A from ai_questions (new) or question_other (old) */}
+                  {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
                     let qa: any[] = [];
-                    try { qa = JSON.parse(fb.ai_questions); } catch {}
-                    if (!Array.isArray(qa)) qa = [];
-                    return qa.length > 0 ? (
-                      <div className="border-t border-border pt-3 space-y-3">
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                        {qa.map((item, i) => {
-                          const question = item.question || Object.keys(item)[0];
-                          const answer = item.answer || item[question] || "";
-                          return (
-                            <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
-                              <p className="text-xs font-medium text-foreground">{question || String(i)}</p>
-                              <p className="text-sm text-muted-foreground">{answer}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null;
-                  })() : null}
-                  {!fb.ai_questions || (() => { try { return JSON.parse(fb.ai_questions || "[]").length === 0; } catch { return true; } })() ? (() => {
-                    if (!fb.question_other || !fb.question_other.includes("[AI Follow-ups]")) return null;
-                    const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-                    const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-                    let qa: any[] = [];
-                    try { qa = JSON.parse(aiText); } catch {}
-                    if (!Array.isArray(qa)) qa = [];
-                    if (qa.length === 0) return null;
+                    if (fb.ai_questions) {
+                      try { qa = JSON.parse(fb.ai_questions); } catch {}
+                    }
+                    if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
+                      const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+                      const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
+                      try { qa = JSON.parse(aiText); } catch {}
+                    }
+                    if (!Array.isArray(qa) || qa.length === 0) return null;
                     return (
                       <div className="border-t border-border pt-3 space-y-3">
                         <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
