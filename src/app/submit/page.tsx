@@ -141,9 +141,17 @@ export default function SubmitPage() {
     }
   }, [sliderValues, rating, quickNote, aiLoaded, initialSliderValues, initialRating, initialQuickNote]);
 
+  // On first visit to step 4, capture baselines and load AI questions
   useEffect(() => {
-    if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
-      fetchAIQuestions();
+    if (step === 4 && feedbackLength === "detailed") {
+      if (aiQuestions.length === 0 && !aiError && aiAvailable) {
+        fetchAIQuestions();
+      }
+      if (!aiLoaded && aiQuestions.length === 0) {
+        setInitialSliderValues({ ...sliderValues });
+        setInitialRating(rating);
+        setInitialQuickNote(quickNote || "");
+      }
     }
   }, [step, feedbackLength]);
 
