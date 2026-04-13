@@ -21,6 +21,7 @@ type Feedback = {
   question_features: string;
   question_other: string;
   ai_questions?: string;
+  question_bugs_slider?: string;
   status: string;
   created_at: string;
   submitted_by: string;
@@ -187,6 +188,17 @@ export default function HomePage() {
                         <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100)+"%"}} />
                       </div>
                       <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
+                    </div>
+                  </div>
+                )}
+                {(fb as any).question_bugs_slider && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{width: (Number((fb as any).question_bugs_slider)/10*100)+"%"}} />
+                      </div>
+                      <span className="text-xs font-medium w-8 text-right">{(fb as any).question_bugs_slider}</span>
                     </div>
                   </div>
                 )}

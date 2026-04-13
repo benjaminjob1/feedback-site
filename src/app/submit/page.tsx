@@ -50,6 +50,7 @@ const SCALE_QUESTIONS = [
   { key: "question_improve", label: "Design & layout" },
   { key: "question_bugs", label: "Speed & performance" },
   { key: "question_features", label: "Features & functionality" },
+  { key: "question_bugs_slider", label: "Bugs & issues" },
 ] as const;
 
 const TOTAL_STEPS = (length: FeedbackLength) => (length === "quick" ? 3 : length === "standard" ? 4 : 6);
@@ -208,6 +209,7 @@ export default function SubmitPage() {
       question_improve: questionImprove,
       question_bugs: questionBugs,
       question_features: questionFeatures,
+      question_bugs_slider: questionBugsSlider,
       question_other: questionOther,
       feedback_length: feedbackLength,
     };

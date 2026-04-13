@@ -79,7 +79,7 @@ export default function AdminPage() {
     checkAdmin();
   }, [router]);
 
-  const updateStatus = async (id: string, status: "approved" | "rejected") => {
+  const updateStatus = async (id: string, status: "approved" | "rejected" | "pending") => {
     const res = await fetch("/api/feedback/" + id, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -87,6 +87,14 @@ export default function AdminPage() {
     });
     if (res.ok) {
       setFeedbackList(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+    }
+  };
+
+  const deleteFeedback = async (id: string) => {
+    if (!confirm("Delete this feedback permanently?")) return;
+    const res = await fetch("/api/feedback/" + id, { method: "DELETE" });
+    if (res.ok) {
+      setFeedbackList(prev => prev.filter(f => f.id !== id));
     }
   };
 
@@ -294,6 +302,24 @@ export default function AdminPage() {
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => updateStatus(fb.id, "rejected")}>
                         <X size={14} className="mr-1" /> Reject
+                      </Button>
+                    </div>
+                  ) : fb.status === "approved" ? (
+                    <div className="flex gap-2 pt-3 border-t border-border">
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(fb.id, "pending")}>
+                        Unapprove
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteFeedback(fb.id)}>
+                        <X size={14} className="mr-1" /> Remove
+                      </Button>
+                    </div>
+                  ) : fb.status === "rejected" ? (
+                    <div className="flex gap-2 pt-3 border-t border-border">
+                      <Button size="sm" onClick={() => updateStatus(fb.id, "approved")}>
+                        <Check size={14} className="mr-1" /> Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteFeedback(fb.id)}>
+                        <X size={14} className="mr-1" /> Remove
                       </Button>
                     </div>
                   ) : null}
