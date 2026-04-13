@@ -52,7 +52,7 @@ const SCALE_QUESTIONS = [
   { key: "question_features", label: "Features & functionality" },
 ] as const;
 
-const TOTAL_STEPS = (length: FeedbackLength) => (length === "quick" ? 3 : 4);
+const TOTAL_STEPS = (length: FeedbackLength) => (length === "quick" ? 3 : length === "standard" ? 4 : 6);
 
 export default function SubmitPage() {
   const router = useRouter();
@@ -121,7 +121,7 @@ export default function SubmitPage() {
 
   // Load AI questions when reaching step 3 in detailed mode
   useEffect(() => {
-    if (step === 3 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
+    if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
       fetchAIQuestions();
     }
   }, [step, feedbackLength]);
@@ -133,7 +133,7 @@ export default function SubmitPage() {
       const res = await fetch("/api/ai/feedback-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site, rating }),
+        body: JSON.stringify({ site, rating, sliderValues }),
       });
       const data = await res.json();
       setAiQuestions(data.questions || []);
@@ -563,10 +563,9 @@ export default function SubmitPage() {
                 </div>
               )}
 
-              {/* ── DETAILED ── */}
-              {feedbackLength === "detailed" && (
+              {/* ── DETAILED: STEP 3 = SLIDERS ONLY ── */}
+              {feedbackLength === "detailed" && step === 3 && (
                 <div className="space-y-5">
-                  {/* Standard sliders first */}
                   {SCALE_QUESTIONS.map(({ key, label }) => (
                     <div key={key} className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -598,9 +597,113 @@ export default function SubmitPage() {
                     </div>
                   ))}
 
-                  {/* AI Follow-up questions */}
+                  <Button onClick={() => setStep(4)} className="w-full">
+                    Next: AI Follow-up Questions
+                  </Button>
+                </div>
+              )}
+
+              {/* ── DETAILED: STEP 4 = AI QUESTIONS ── */}
+              {feedbackLength === "detailed" && step === 4 && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setStep(3)}
+                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    >
+                      <ChevronLeft size={14} /> Back to scales
+                    </button>
+                    <span className="text-sm text-muted-foreground">
+                      Scale answers recorded ✓
+                    </span>
+                  </div>
+
                   <div className="border-t border-border pt-4 space-y-4">
                     <div className="flex items-center gap-2">
+                      <Label className="text-base font-medium">AI Follow-up Questions</Label>
+                      {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                    </div>
+
+                    {aiLoading && (
+                      <div className="text-center py-4 text-muted-foreground text-sm">
+                        Generating personalized questions based on your scale answers...
+                      </div>
+                    )}
+
+                    {!aiLoading && aiError && (
+                      <p className="text-sm text-muted-foreground">
+                        AI follow-up questions unavailable right now.
+                      </p>
+                    )}
+
+                    {!aiLoading && aiQuestions.length === 0 && !aiError && (
+                      <p className="text-sm text-muted-foreground">
+                        AI follow-up questions unavailable.
+                      </p>
+                    )}
+
+                    {aiQuestions.map((q, i) => (
+                      <div key={i} className="space-y-2">
+                        <Label htmlFor={`ai-q-${i}`} className="text-sm font-medium">
+                          {q.question}
+                        </Label>
+                        <Textarea
+                          id={`ai-q-${i}`}
+                          placeholder={q.placeholder || "Your answer..."}
+                          value={aiAnswers[i] ?? ""}
+                          onChange={e => setAiAnswers(prev => ({ ...prev, [i]: e.target.value }))}
+                          rows={2}
+                          className="text-sm"
+                        />
+                      </div>
+                    ))}
+
+                    <Button onClick={() => setStep(5)} className="w-full" disabled={aiLoading}>
+                      Next: Overall comments
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── DETAILED: STEP 5 = OVERALL COMMENTS ── */}
+              {feedbackLength === "detailed" && step === 5 && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setStep(4)}
+                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    >
+                      <ChevronLeft size={14} /> Back to AI questions
+                    </button>
+                    <span className="text-sm text-muted-foreground">
+                      {aiAnswers.filter(a => a.trim()).length}/{aiQuestions.length} AI answers
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="overall-comments-detailed">
+                      Overall comments <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Textarea
+                      id="overall-comments-detailed"
+                      placeholder="Anything else on your mind..."
+                      value={overallComments}
+                      onChange={e => setOverallComments(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+
+                  <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
+                  </Button>
+                </div>
+              )}
+
+              {/* ── DETAILED: step 3 original (combined) — now hidden — */}
+              {feedbackLength === "detailed" && step > 5 && (
+                <div className="space-y-5">
+                  {/* Standard sliders first */}
+                  {SCALE_QUESTIONS.map(({ key, label }) => (
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
                     </div>

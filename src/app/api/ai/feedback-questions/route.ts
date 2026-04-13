@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
+const SCALE_QUESTIONS = [
+  { key: "question_easy", label: "Ease of use" },
+  { key: "question_improve", label: "Design & layout" },
+  { key: "question_bugs", label: "Speed & performance" },
+  { key: "question_features", label: "Features & functionality" },
+];
+
 const RATING_LABELS: Record<number, string> = {
   1: "Poor",
   2: "Below Average",
@@ -28,7 +35,11 @@ export async function POST(req: NextRequest) {
   const { site, rating } = body;
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", generate 2-3 specific, probing follow-up questions that would help gather deeper feedback. Return ONLY valid JSON with this exact structure:
+  const sliderInfo = body.sliderValues
+    ? `Scale answers given:\n${SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${body.sliderValues[key] ?? "not answered"}/10`).join("\n")}`
+    : "";
+
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}generate 2-3 specific, probing follow-up questions that follow up on their scale answers and dig deeper. Return ONLY valid JSON with this exact structure:
 {"questions": [{"question": "...", "placeholder": "..."}]}`;
 
   const controller = new AbortController();

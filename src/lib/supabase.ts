@@ -33,5 +33,6 @@ export const SITES = [
   { value: "hardware", label: "Hardware", emoji: "🔧" },
   { value: "software", label: "Software", emoji: "💾" },
   { value: "railway", label: "Railway", emoji: "🚂" },
+  { value: "feedback", label: "Feedback Portal", emoji: "📝" },
 ] as const;
 export type SiteValue = (typeof SITES)[number]["value"];
