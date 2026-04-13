@@ -118,7 +118,7 @@ export default function HomePage() {
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
-      ) : !canSeeFeedback ? (
+      ) : !user ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Please log in to view your feedback.</p>
         </div>
