@@ -225,6 +225,7 @@ export default function SubmitPage() {
           setInitialRating(rating);
           setInitialQuickNote(quickNote || "");
           setAiLoaded(true);
+          setAiPreloaded(true);
           setHasAnswersChanged(false);
         }
       } catch {}
@@ -244,6 +245,7 @@ export default function SubmitPage() {
         setInitialRating(rating);
         setInitialQuickNote(quickNote || "");
         setAiLoaded(true);
+        setAiPreloaded(true);
         setHasAnswersChanged(false);
       }
 
