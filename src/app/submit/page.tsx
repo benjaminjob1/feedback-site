@@ -121,24 +121,14 @@ export default function SubmitPage() {
   }, [router]);
 
   // Load AI questions when reaching step 3 in detailed mode
+  // Track if user changed any field since loading AI questions
+  const [aiDataChanged, setAiDataChanged] = useState(false);
+
   useEffect(() => {
     if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
       fetchAIQuestions();
     }
   }, [step, feedbackLength]);
-
-  const fetchAIQuestions = async () => {
-    setAiLoading(true);
-    setAiError(false);
-    try {
-      const res = await fetch("/api/ai/feedback-questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site, rating, sliderValues }),
-      });
-      const data = await res.json();
-      setAiQuestions(data.questions || []);
-    } catch {
       setAiError(true);
     } finally {
       setAiLoading(false);
@@ -168,12 +158,29 @@ export default function SubmitPage() {
     if (fb.ai_questions) {
       try {
         const parsed = JSON.parse(fb.ai_questions);
-        if (Array.isArray(parsed)) setAiQuestions(parsed);
+        if (Array.isArray(parsed)) {
+          // Legacy array format
+          setAiQuestions(parsed);
+        } else if (typeof parsed === "object" && parsed !== null) {
+          // Flat object format: { question: answer }
+          const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
+          setAiQuestions(qa);
+          setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+        }
       } catch { /* ignore */ }
     }
 
     setQuickNote("");
     setOverallComments(fb.question_other || "");
+
+    // Also restore slider comments
+    if (fb.question_other_comments) {
+      try {
+        const comments = JSON.parse(fb.question_other_comments);
+        setSliderComments(comments);
+      } catch {}
+    }
+
     setStep(2);
   };
 
