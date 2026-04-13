@@ -86,6 +86,7 @@ export default function SubmitPage() {
   // Detailed AI questions
   const [aiQuestions, setAiQuestions] = useState<AIQuestion[]>([]);
   const [aiAnswers, setAiAnswers] = useState<Record<number, string>>({});
+  // Note: question_other_comments field exists in DB but not yet used
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(false);
   const [aiAvailable, setAiAvailable] = useState(true);
@@ -192,14 +193,6 @@ export default function SubmitPage() {
 
     setQuickNote("");
     setOverallComments(fb.question_other || "");
-
-    // Also restore slider comments
-    if (fb.question_other_comments) {
-      try {
-        const comments = JSON.parse(fb.question_other_comments);
-        setSliderComments(comments);
-      } catch {}
-    }
 
     setStep(2);
   };
