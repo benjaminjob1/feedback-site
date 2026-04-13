@@ -226,6 +226,16 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
+                  {/* Debug: show raw slider_comments */}
+                  {fb.slider_comments ? (
+                    <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 text-xs p-2 rounded mb-2">
+                      <strong>Slider comments saved:</strong> {fb.slider_comments}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-100 border border-gray-300 text-gray-500 text-xs p-2 rounded mb-2">
+                      <strong>No slider_comments</strong> in DB for this entry
+                    </div>
+                  )}
                   {(() => {
                     const sliderComments: Record<string, string> = {};
                     if (fb.slider_comments) { try { Object.assign(sliderComments, JSON.parse(fb.slider_comments)); } catch {} }
