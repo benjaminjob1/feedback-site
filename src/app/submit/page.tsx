@@ -136,11 +136,6 @@ export default function SubmitPage() {
       fetchAIQuestions();
     }
   }, [step, feedbackLength]);
-      setAiError(true);
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const handleEditExisting = (fb: ExistingFeedback) => {
     setEditingId(fb.id);
