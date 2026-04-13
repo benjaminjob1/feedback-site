@@ -600,12 +600,15 @@ export default function SubmitPage() {
                 <button
                   onClick={() => {
                     setStep(1);
+                    setSite("");
+                    setRating(0);
+                    setDisplayRating(0);
+                    setHoverRating(0);
+                    setFeedbackLength("standard");
+                    setOriginalFeedbackLength(null);
+                    setShowLengthWarning(false);
                     if (editingId) {
                       setEditingId(null);
-                      setSite("");
-                      setFeedbackLength("standard");
-                      setOriginalFeedbackLength(null);
-                      setShowLengthWarning(false);
                     }
                   }}
                   className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
