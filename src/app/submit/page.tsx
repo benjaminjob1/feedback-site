@@ -124,7 +124,10 @@ export default function SubmitPage() {
   // Load AI questions when reaching step 3 in detailed mode
   // Track if user changed any field since loading AI questions
   const [initialSliderValues, setInitialSliderValues] = useState<Record<string, number>>({});
+  const [initialRating, setInitialRating] = useState(rating);
+  const [initialQuickNote, setInitialQuickNote] = useState("");
   const [aiLoaded, setAiLoaded] = useState(false);
+  const [hasAnswersChanged, setHasAnswersChanged] = useState(false);
   const [aiDataChanged, setAiDataChanged] = useState(false);
 
   // Mark data as changed when user moves a slider after AI questions loaded
@@ -137,6 +140,8 @@ export default function SubmitPage() {
   useEffect(() => {
     if (step === 4 && aiQuestions.length > 0 && !aiLoaded) {
       setInitialSliderValues({ ...sliderValues });
+      setInitialRating(rating);
+      setInitialQuickNote(quickNote || "");
       setAiLoaded(true);
       setAiDataChanged(false);
     }
