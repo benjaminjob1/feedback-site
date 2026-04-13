@@ -18,7 +18,7 @@ const RATING_LABELS: Record<number, string> = {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, remaining, resetIn } = checkRateLimit(ip, 5); // 5 per hour for feedback questions
+  const { allowed, remaining, resetIn } = checkRateLimit(ip, 5);
 
   if (!allowed) {
     return NextResponse.json(
@@ -36,24 +36,23 @@ export async function POST(req: NextRequest) {
   const ratingLabel = RATING_LABELS[rating] || `(${rating}-star)`;
 
   const sliderInfo = body.sliderValues
-    ? `Scale answers given:\n${SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${body.sliderValues[key] ?? "not answered"}/10`).join("\n")}`
+    ? "Scale answers given:\n" + SCALE_QUESTIONS.map(({key, label}) => `  - ${label}: ${body.sliderValues[key] ?? "not answered"}/10`).join("\n")
     : "";
 
-  const excludeList = Array.isArray(exclude) ? exclude : [];
+  const excludeList: string[] = Array.isArray(exclude) ? exclude : [];
 
-  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}generate 2-3 specific, probing follow-up questions that follow up on their scale answers and dig deeper. Return ONLY valid JSON with this exact structure:
+  const requested = typeof count === "number" ? Math.min(count, 5) : 3;
+  const maxToRequest = Math.max(requested * 2, 5);
+
+  const existingListStr = excludeList.length > 0
+    ? "Already-asked questions (DO NOT repeat or ask similar ones):\n" + excludeList.map(q => `  - "${q}"`).join("\n") + "\n"
+    : "";
+
+  const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}${existingListStr}generate ${maxToRequest} specific, probing follow-up questions that are COMPLETELY DIFFERENT from any already listed above. Return ONLY valid JSON with this exact structure:
 {"questions": [{"question": "...", "placeholder": "..."}]}
 
-CRITICAL CONSTRAINT: You MUST NOT generate any question that is the same as, or very similar in meaning to, any of these already-asked questions:
-${excludeList.map(q => `  - "${q}"`).join("
-")}
+STRICT RULE: Every generated question must be meaningfully different from all existing questions. Do not rephrase, restate, or approach the same topic as any existing question.`;
 
-Examples of "similar" (ALL MUST BE AVOIDED):
-  - Same topic/feature even with different wording
-  - Same question rephrased
-  - Same aspect approached from a different angle
-  - If an existing question asks about "features", do NOT ask about "missing features" or "feature gaps" or "specific features"
-Generate completely different questions covering unexplored topics from the review.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
@@ -67,7 +66,7 @@ Generate completely different questions covering unexplored topics from the revi
       } as HeadersInit,
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
+        max_tokens: 400,
         messages: [{ role: "user", content: prompt }],
       }),
       signal: controller.signal,
@@ -111,23 +110,21 @@ Generate completely different questions covering unexplored topics from the revi
     const filtered = parsed.questions.filter((q: any) => {
       const qText = (q.question || "").toLowerCase().trim();
       if (!qText) return false;
-      // Exact match
-      if (excludeList.some((ex: string) => ex.toLowerCase().trim() === qText)) return false;
-      // Similar match: if any excluded question shares >3 words with this one, skip it
-      const qWords = qText.split(/\s+/).filter(w => w.length > 3);
       for (const ex of excludeList) {
         const exText = ex.toLowerCase().trim();
-        const exWords = exText.split(/\s+/).filter(w => w.length > 3);
-        const overlap = qWords.filter(w => exWords.includes(w)).length;
-        if (overlap >= 3) return false; // too many shared meaningful words
-        // Also check if question text is contained
+        // Exact match
+        if (exText === qText) return false;
+        // Contained
         if (qText.includes(exText) || exText.includes(qText)) return false;
+        // Word overlap: split on non-word chars, filter short words, count shared
+        const qWords: string[] = qText.split(/\W+/).filter((w: string) => w.length > 3);
+        const exWords: string[] = exText.split(/\W+/).filter((w: string) => w.length > 3);
+        const overlap = qWords.filter((w: string) => exWords.includes(w)).length;
+        if (overlap >= 3) return false;
       }
       return true;
     });
 
-    const requested = typeof count === "number" ? Math.min(count, 5) : 3;
-    const maxToRequest = Math.max(requested * 2, 5); // request more to account for filtering
     return NextResponse.json({
       questions: filtered.slice(0, requested).map((q: any) => ({
         question: typeof q.question === "string" ? q.question : "",
