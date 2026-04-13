@@ -659,14 +659,13 @@ export default function SubmitPage() {
                       {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
                         <button
                           onClick={() => {
-                            if (confirm("Regenerate questions? Previous answers will be lost.")) {
-                              setAiDataChanged(false);
+                            if (confirm("Regenerate AI questions? Previous answers will be lost.")) {
                               fetchAIQuestions();
                             }
                           }}
-                          className="text-xs text-primary hover:underline"
+                          className="text-sm font-bold text-red-600 hover:text-red-700"
                         >
-                          Sliders changed — Regenerate questions?
+                          ⚠️ Answers changed — Regenerate AI questions?
                         </button>
                       )}
                       {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && !Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
