@@ -180,15 +180,24 @@ export default function SubmitPage() {
       try {
         const parsed = JSON.parse(fb.ai_questions);
         if (Array.isArray(parsed)) {
-          // Legacy array format
           setAiQuestions(parsed);
         } else if (typeof parsed === "object" && parsed !== null) {
-          // Flat object format: { question: answer }
           const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
           setAiQuestions(qa);
           setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
         }
-      } catch { /* ignore */ }
+      } catch {}
+    } else if (fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
+      // Extract from question_other text
+      const match = fb.question_other.match(/\[AI Follow-ups\]\s*(\{.*\})/s);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[1]);
+          const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
+          setAiQuestions(qa);
+          setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+        } catch {}
+      }
     }
 
     setQuickNote("");
@@ -632,11 +641,21 @@ export default function SubmitPage() {
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
                       {aiDataChanged && !aiLoading && aiQuestions.length > 0 && (
                         <button
-                          onClick={() => { setAiDataChanged(false); fetchAIQuestions(); }}
+                          onClick={() => {
+                            if (confirm("Regenerate questions? Previous answers will be lost.")) {
+                              setAiDataChanged(false);
+                              fetchAIQuestions();
+                            }
+                          }}
                           className="text-xs text-primary hover:underline"
                         >
                           Regenerate based on answers?
                         </button>
+                      )}
+                      {!aiDataChanged && !aiLoading && aiQuestions.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {aiQuestions.length} question{aiQuestions.length !== 1 ? "s" : ""} loaded from previous submission
+                        </span>
                       )}
                     </div>
 
