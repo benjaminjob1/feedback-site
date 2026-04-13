@@ -202,12 +202,45 @@ export default function HomePage() {
                     </div>
                   </div>
                 )}
-                {fb.question_other && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
-                    <p className="text-sm">{fb.question_other}</p>
-                  </div>
-                )}
+                {(() => {
+                  const hasAI = fb.question_other && fb.question_other.includes("[AI Follow-ups]");
+                  if (hasAI) {
+                    // Split actual comment from AI Q&A
+                    const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+                    const commentText = fb.question_other.substring(0, aiIdx).trim();
+                    const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
+                    let qa: any[] = [];
+                    try { qa = JSON.parse(aiText); } catch {}
+                    const entries = Object.entries(qa);
+                    return (
+                      <div className="space-y-3">
+                        {commentText ? (
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
+                            <p className="text-sm">{commentText}</p>
+                          </div>
+                        ) : null}
+                        {entries.length > 0 ? (
+                          <div className="border-t border-border pt-2 space-y-2">
+                            <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                            {entries.map(([question, answer], i) => (
+                              <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                                <p className="text-xs font-medium">{question}</p>
+                                <p className="text-xs text-muted-foreground">{answer}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }
+                  return fb.question_other ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
+                      <p className="text-sm">{fb.question_other}</p>
+                    </div>
+                  ) : null;
+                })()}
                 {fb.ai_questions ? (() => {
                   let qaObj: Record<string, string> = {};
                   try { qaObj = JSON.parse(fb.ai_questions); } catch {}

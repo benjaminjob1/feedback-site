@@ -123,7 +123,8 @@ export default function SubmitPage() {
 
   // Load AI questions when reaching step 3 in detailed mode
   // Track if user changed any field since loading AI questions
-  const [aiDataChanged, setAiDataChanged] = useState(false);
+  const [initialSliderValues, setInitialSliderValues] = useState<Record<string, number>>({});
+  const [aiLoaded, setAiLoaded] = useState(false);
 
   // Mark data as changed when user moves a slider after AI questions loaded
   useEffect(() => {
@@ -131,6 +132,13 @@ export default function SubmitPage() {
       setAiDataChanged(true);
     }
   }, [sliderValues]);
+
+  useEffect(() => {
+    if (step === 4 && aiQuestions.length > 0 && !aiLoaded) {
+      setInitialSliderValues({ ...sliderValues });
+      setAiLoaded(true);
+    }
+  }, [step]);
 
   useEffect(() => {
     if (step === 4 && feedbackLength === "detailed" && aiQuestions.length === 0 && !aiError && aiAvailable) {
@@ -149,6 +157,10 @@ export default function SubmitPage() {
       });
       const data = await res.json();
       setAiQuestions(data.questions || []);
+      if (data.questions?.length > 0) {
+        setInitialSliderValues({ ...sliderValues });
+        setAiLoaded(true);
+      }
     } catch {
       setAiError(true);
     } finally {
@@ -641,7 +653,7 @@ export default function SubmitPage() {
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                      {aiDataChanged && !aiLoading && aiQuestions.length > 0 && (
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && (
                         <button
                           onClick={() => {
                             if (confirm("Regenerate questions? Previous answers will be lost.")) {
@@ -651,10 +663,10 @@ export default function SubmitPage() {
                           }}
                           className="text-xs text-primary hover:underline"
                         >
-                          Regenerate based on answers?
+                          Sliders changed — Regenerate questions?
                         </button>
                       )}
-                      {!aiDataChanged && !aiLoading && aiQuestions.length > 0 && (
+                      {step === 4 && !aiLoading && aiQuestions.length > 0 && !Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
                         <span className="text-xs text-muted-foreground">
                           {aiQuestions.length} question{aiQuestions.length !== 1 ? "s" : ""} loaded from previous submission
                         </span>
