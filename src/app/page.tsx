@@ -197,21 +197,18 @@ export default function HomePage() {
                   </div>
                 )}
                 {fb.ai_questions ? (() => {
-                  let qa: any[] = [];
-                  try { qa = JSON.parse(fb.ai_questions); } catch {}
-                  return qa.length > 0 ? (
+                  let qaObj: Record<string, string> = {};
+                  try { qaObj = JSON.parse(fb.ai_questions); } catch {}
+                  const entries = Object.entries(qaObj);
+                  return entries.length > 0 ? (
                     <div className="border-t border-border pt-2 space-y-2">
                       <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                      {qa.map((item, i) => {
-                        const question = Object.keys(item)[0];
-                        const answer = item[question];
-                        return (
-                          <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                            <p className="text-xs font-medium">{question}</p>
-                            <p className="text-xs text-muted-foreground">{answer}</p>
-                          </div>
-                        );
-                      })}
+                      {entries.map(([question, answer], i) => (
+                        <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                          <p className="text-xs font-medium">{question}</p>
+                          <p className="text-xs text-muted-foreground">{answer}</p>
+                        </div>
+                      ))}
                     </div>
                   ) : null;
                 })() : null}
