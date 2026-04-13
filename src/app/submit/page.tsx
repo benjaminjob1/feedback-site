@@ -137,6 +137,24 @@ export default function SubmitPage() {
     }
   }, [step, feedbackLength]);
 
+  const fetchAIQuestions = async () => {
+    setAiLoading(true);
+    setAiError(false);
+    try {
+      const res = await fetch("/api/ai/feedback-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site, rating, sliderValues }),
+      });
+      const data = await res.json();
+      setAiQuestions(data.questions || []);
+    } catch {
+      setAiError(true);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleEditExisting = (fb: ExistingFeedback) => {
     setEditingId(fb.id);
     setSite(fb.site);
