@@ -44,8 +44,16 @@ export async function POST(req: NextRequest) {
   const prompt = `For a user giving a ${rating}-star ("${ratingLabel}") review of "${site}", ${sliderInfo ? `they answered the following scales:\n${sliderInfo}\n` : ""}generate 2-3 specific, probing follow-up questions that follow up on their scale answers and dig deeper. Return ONLY valid JSON with this exact structure:
 {"questions": [{"question": "...", "placeholder": "..."}]}
 
-IMPORTANT: Do NOT generate questions similar to these already-asked ones: ${excludeList.map(q => `"${q}"`).join(", ")}.`;
+CRITICAL CONSTRAINT: You MUST NOT generate any question that is the same as, or very similar in meaning to, any of these already-asked questions:
+${excludeList.map(q => `  - "${q}"`).join("
+")}
 
+Examples of "similar" (ALL MUST BE AVOIDED):
+  - Same topic/feature even with different wording
+  - Same question rephrased
+  - Same aspect approached from a different angle
+  - If an existing question asks about "features", do NOT ask about "missing features" or "feature gaps" or "specific features"
+Generate completely different questions covering unexplored topics from the review.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
@@ -99,13 +107,27 @@ IMPORTANT: Do NOT generate questions similar to these already-asked ones: ${excl
       return NextResponse.json({ questions: [], remaining });
     }
 
-    // Filter out excluded questions
+    // Filter out excluded and similar questions
     const filtered = parsed.questions.filter((q: any) => {
       const qText = (q.question || "").toLowerCase().trim();
-      return !excludeList.some((ex: string) => ex.toLowerCase().trim() === qText);
+      if (!qText) return false;
+      // Exact match
+      if (excludeList.some((ex: string) => ex.toLowerCase().trim() === qText)) return false;
+      // Similar match: if any excluded question shares >3 words with this one, skip it
+      const qWords = qText.split(/\s+/).filter(w => w.length > 3);
+      for (const ex of excludeList) {
+        const exText = ex.toLowerCase().trim();
+        const exWords = exText.split(/\s+/).filter(w => w.length > 3);
+        const overlap = qWords.filter(w => exWords.includes(w)).length;
+        if (overlap >= 3) return false; // too many shared meaningful words
+        // Also check if question text is contained
+        if (qText.includes(exText) || exText.includes(qText)) return false;
+      }
+      return true;
     });
 
-    const requested = typeof count === "number" ? count : 3;
+    const requested = typeof count === "number" ? Math.min(count, 5) : 3;
+    const maxToRequest = Math.max(requested * 2, 5); // request more to account for filtering
     return NextResponse.json({
       questions: filtered.slice(0, requested).map((q: any) => ({
         question: typeof q.question === "string" ? q.question : "",
