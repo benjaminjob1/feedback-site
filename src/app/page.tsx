@@ -22,7 +22,6 @@ type Feedback = {
   question_other: string;
   ai_questions?: string;
   question_bugs_slider?: string;
-  slider_comments?: string;
   status: string;
   created_at: string;
   submitted_by: string;
@@ -168,31 +167,6 @@ export default function HomePage() {
                       </div>
                     );
                   };
-                  // Parse AI Q&A from new format (ai_questions) or old format (question_other)
-                  const getQA = (): Array<{question: string; answer: string; key: number}> => {
-                    let qa: any[] = [];
-                    if ((fb as any).ai_questions) {
-                      try { qa = JSON.parse((fb as any).ai_questions); } catch {}
-                    }
-                    if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
-                      const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-                      const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-                      try { qa = JSON.parse(aiText); } catch {}
-                    }
-                    if (!Array.isArray(qa)) return [];
-                    return qa.map((item: any, i: number) => {
-                      if (typeof item === "object" && item !== null && "question" in item) {
-                        return { question: String(item.question || ""), answer: String(item.answer || item.placeholder || ""), key: i };
-                      }
-                      if (typeof item === "object" && item !== null) {
-                        const keys = Object.keys(item);
-                        if (keys.length > 0) return { question: keys[0], answer: String(item[keys[0]] || ""), key: i };
-                      }
-                      return { question: "", answer: "", key: i };
-                    }).filter(item => item.question);
-                  };
-                  const qaItems = getQA();
-                  const stripAI = (text: string) => text ? text.replace(/\[AI Follow-ups\]/g, "").trim() : "";
                   return (
                     <>
                       {fb.question_easy ? renderBar("question_easy", "EASY TO USE", fb.question_easy) : null}
@@ -200,26 +174,67 @@ export default function HomePage() {
                       {fb.question_bugs ? renderBar("question_bugs", "SPEED & PERFORMANCE", fb.question_bugs) : null}
                       {fb.question_features ? renderBar("question_features", "FEATURES & FUNCTIONALITY", fb.question_features) : null}
                       {(fb as any).question_bugs_slider ? renderBar("question_bugs_slider", "BUGS & ISSUES NOT PRESENT", (fb as any).question_bugs_slider) : null}
-                      {stripAI(fb.question_other) ? (
-                        <div>
-                          <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">COMMENTS</p>
-                          <p className="text-sm">{stripAI(fb.question_other)}</p>
-                        </div>
-                      ) : null}
-                      {qaItems.length > 0 ? (
-                        <div className="border-t border-border pt-2 space-y-2">
-                          <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                          {qaItems.map(item => (
-                            <div key={item.key} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                              <p className="text-xs font-medium">{item.question}</p>
-                              {item.answer ? <p className="text-xs text-muted-foreground">{item.answer}</p> : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
                     </>
                   );
                 })()}
+                {(() => {
+                  const hasAI = fb.question_other && fb.question_other.includes("[AI Follow-ups]");
+                  if (hasAI) {
+                    // Split actual comment from AI Q&A
+                    const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+                    const commentText = fb.question_other.substring(0, aiIdx).trim();
+                    const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
+                    let qa: any[] = [];
+                    try { qa = JSON.parse(aiText); } catch {}
+                    const entries = Object.entries(qa);
+                    return (
+                      <div className="space-y-3">
+                        {commentText ? (
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
+                            <p className="text-sm">{commentText}</p>
+                          </div>
+                        ) : null}
+                        {entries.length > 0 ? (
+                          <div className="border-t border-border pt-2 space-y-2">
+                            <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                            {entries.map(([question, answer], i) => (
+                              <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                                <p className="text-xs font-medium">{question}</p>
+                                <p className="text-xs text-muted-foreground">{answer}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }
+                  return fb.question_other ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
+                      <p className="text-sm">{fb.question_other}</p>
+                    </div>
+                  ) : null;
+                })()}
+                {fb.ai_questions ? (() => {
+                  let qaObj: Record<string, string> = {};
+                  try { qaObj = JSON.parse(fb.ai_questions); } catch {}
+                  const entries = Object.entries(qaObj);
+                  return entries.length > 0 ? (
+                    <div className="border-t border-border pt-2 space-y-2">
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                      {entries.map(([question, answer], i) => (
+                        <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
+                          <p className="text-xs font-medium">{question}</p>
+                          <p className="text-xs text-muted-foreground">{answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null;
+                })() : null}
+                <p className="text-xs text-muted-foreground">
+                  {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
               </CardContent>
             </Card>
           ))}
