@@ -165,8 +165,11 @@ export default function SubmitPage() {
         body: JSON.stringify({ site, rating, sliderValues }),
       });
       const data = await res.json();
-      setAiQuestions(data.questions || []);
-      if (data.questions?.length > 0) {
+      const newQuestions = data.questions || [];
+      setAiQuestions(newQuestions);
+      // Reset answers so new questions show blank instead of stale data
+      setAiAnswers({});
+      if (newQuestions.length > 0) {
         setInitialSliderValues({ ...sliderValues });
         setInitialRating(rating);
         setInitialQuickNote(quickNote || "");
