@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
         question_features,
         question_bugs_slider,
         question_other,
+        ai_questions: ai_questions || null,
         feedback_length: feedback_length || "standard",
       })
       .eq("id", edit_id)

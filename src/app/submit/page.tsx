@@ -315,6 +315,7 @@ export default function SubmitPage() {
       question_bugs_slider: questionBugsSlider,
       question_other: questionOther,
       ai_questions: aiQuestionsJson || null,
+      slider_comments: JSON.stringify(sliderComments),
       feedback_length: feedbackLength,
     };
     if (editingId) body.edit_id = editingId;
@@ -342,7 +343,7 @@ export default function SubmitPage() {
       setExistingFeedback(prev =>
         prev.map(f =>
           f.id === editingId
-            ? { ...f, rating, question_easy: questionEasy, question_improve: questionImprove, question_bugs: questionBugs, question_features: questionFeatures, question_other: questionOther }
+            ? { ...f, rating, question_easy: questionEasy, question_improve: questionImprove, question_bugs: questionBugs, question_features: questionFeatures, question_other: questionOther, ai_questions: aiQuestionsJson }
             : f
         )
       );
