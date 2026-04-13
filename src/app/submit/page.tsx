@@ -128,6 +128,7 @@ export default function SubmitPage() {
   const [initialQuickNote, setInitialQuickNote] = useState("");
   const [aiLoaded, setAiLoaded] = useState(false);
   const [hasAnswersChanged, setHasAnswersChanged] = useState(false);
+  const [aiPreloaded, setAiPreloaded] = useState(false); // true if loaded from existing feedback
 
   // Mark data as changed when user moves a slider, rating, or quick note after AI questions loaded
   useEffect(() => {
@@ -167,8 +168,8 @@ export default function SubmitPage() {
       const data = await res.json();
       const newQuestions = data.questions || [];
       setAiQuestions(newQuestions);
-      // Reset answers so new questions show blank instead of stale data
       setAiAnswers({});
+      setAiPreloaded(false); // mark as freshly generated, not preloaded
       if (newQuestions.length > 0) {
         setInitialSliderValues({ ...sliderValues });
         setInitialRating(rating);
@@ -213,6 +214,7 @@ export default function SubmitPage() {
             setInitialRating(rating);
             setInitialQuickNote(quickNote || "");
             setAiLoaded(true);
+            setAiPreloaded(true);
             setHasAnswersChanged(false);
           }
         } else if (typeof parsed === "object" && parsed !== null) {
@@ -735,7 +737,7 @@ export default function SubmitPage() {
                           + Add more AI questions ({5 - aiQuestions.length} more available)
                         </button>
                       )}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && !hasAnswersChanged && (
+                      {step === 4 && !aiLoading && aiLoaded && aiPreloaded && aiQuestions.length > 0 && !hasAnswersChanged && (
                         <span className="text-xs text-muted-foreground">
                           {aiQuestions.length} question{aiQuestions.length !== 1 ? "s" : ""} loaded from previous submission
                         </span>
