@@ -20,7 +20,9 @@ type Feedback = {
   question_features: string;
   question_other: string;
   ai_questions?: string;
+  slider_comments?: string;
   feedback_length?: string;
+  question_bugs_slider?: string;
   status: string;
   created_at: string;
   submitted_by: string;
@@ -224,89 +226,96 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  {fb.question_easy ? (
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100) + "%"}} />
-                        </div>
-                        <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
-                      </div>
-                    </div>
-                  ) : null}
-                  {fb.question_improve ? (
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100) + "%"}} />
-                        </div>
-                        <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
-                      </div>
-                    </div>
-                  ) : null}
-                  {fb.question_bugs ? (
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100) + "%"}} />
-                        </div>
-                        <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
-                      </div>
-                    </div>
-                  ) : null}
-                  {fb.question_features ? (
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100) + "%"}} />
-                        </div>
-                        <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
-                      </div>
-                    </div>
-                  ) : null}
-                  {(() => {
-                  if (!fb.question_other) return null;
-                  const hasAI = fb.question_other.includes("[AI Follow-ups]");
-                  if (hasAI) {
-                    const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-                    const commentText = fb.question_other.substring(0, aiIdx).trim();
-                    const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-                    let qa: any[] = [];
-                    try { qa = JSON.parse(aiText); } catch {}
-                    const entries = Object.entries(qa);
+                  {fb.question_easy ? (() => {
+                    const sliderComments: Record<string, string> = {};
+                    if (fb.slider_comments) { try { (void JSON.parse(fb.slider_comments as string)); } catch {} }
                     return (
-                      <div className="space-y-2">
-                        {commentText ? (
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
-                            <p className="text-sm">{commentText}</p>
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100) + "%"}} />
                           </div>
-                        ) : null}
-                        {entries.length > 0 ? (
-                          <div className="border-t border-border pt-2 space-y-2">
-                            <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                            {entries.map(([question, answer], i) => (
-                              <div key={i} className="bg-muted/30 rounded-md p-2 space-y-0.5">
-                                <p className="text-xs font-medium">{question}</p>
-                                <p className="text-xs text-muted-foreground">{answer}</p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
+                          <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
+                        </div>
                       </div>
                     );
-                  }
-                  return (
+                  })() : null}
+                  {fb.question_improve ? (() => {
+                    return (
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100) + "%"}} />
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
+                        </div>
+                      </div>
+                    );
+                  })() : null}
+                  {fb.question_bugs ? (() => {
+                    return (
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100) + "%"}} />
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
+                        </div>
+                      </div>
+                    );
+                  })() : null}
+                  {fb.question_features ? (() => {
+                    return (
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100) + "%"}} />
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
+                        </div>
+                      </div>
+                    );
+                  })() : null}
+                  {fb.question_bugs_slider ? (() => {
+                    return (
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES NOT PRESENT</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs_slider)/10*100) + "%"}} />
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right">{fb.question_bugs_slider}</span>
+                        </div>
+                      </div>
+                    );
+                  })() : null}
+                  {/* Slider comments */}
+                  {fb.slider_comments ? (() => {
+                    try {
+                      const sc: Record<string, string> = JSON.parse(fb.slider_comments);
+                      const entries = Object.entries(sc).filter(([, v]) => v.trim());
+                      if (entries.length === 0) return null;
+                      return (
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground text-xs uppercase tracking-wide">SLIDER COMMENTS</p>
+                          {entries.map(([k, v]) => (
+                            <p key={k} className="text-xs text-muted-foreground italic">"{v}"</p>
+                          ))}
+                        </div>
+                      );
+                    } catch { return null; }
+                  })() : null}
+                  {/* Overall comments (no AI data - that's in ai_questions) */}
+                  {fb.question_other ? (
                     <div>
                       <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
                       <p className="text-sm">{fb.question_other}</p>
                     </div>
-                  );
-                })()}
+                  ) : null}
 
                   {fb.ai_questions ? (() => {
                     let qa: any[] = [];
