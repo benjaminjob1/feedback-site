@@ -280,7 +280,7 @@ export default function SubmitPage() {
     const questionOther =
       feedbackLength === "quick"
         ? quickNote
-        : overallComments + (aiQuestionsJson ? `\n\n[AI Follow-ups]\n${aiQuestionsJson}` : "");
+        : overallComments;
 
     const body: any = {
       site,
@@ -291,6 +291,7 @@ export default function SubmitPage() {
       question_features: questionFeatures,
       question_bugs_slider: questionBugsSlider,
       question_other: questionOther,
+      ai_questions: aiQuestionsJson || null,
       feedback_length: feedbackLength,
     };
     if (editingId) body.edit_id = editingId;
