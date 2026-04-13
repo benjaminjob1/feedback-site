@@ -89,6 +89,9 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
             <Link href="/" className="hover:text-primary transition-colors">
               Browse
             </Link>
+            <a href="https://hub.benjob.me" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+              Hub
+            </a>
             {!loading && (
               user ? (
                 <div className="relative">
