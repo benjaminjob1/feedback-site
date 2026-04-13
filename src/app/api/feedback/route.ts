@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const userId = profile.id;
 
   const body = await req.json();
-  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, feedback_length, edit_id } = body;
+  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, ai_questions, feedback_length, edit_id } = body;
 
   if (!site || !rating) {
     return NextResponse.json({ error: "Site and rating are required" }, { status: 400 });
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
       question_bugs,
       question_features,
       question_other,
+      ai_questions: ai_questions || null,
       feedback_length: feedback_length || "standard",
       submitted_by: userId,
       status: "pending",
