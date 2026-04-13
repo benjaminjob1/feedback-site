@@ -162,7 +162,7 @@ export default function SubmitPage() {
       const res = await fetch("/api/ai/feedback-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site, rating, sliderValues, exclude: aiQuestions.map(q => q.question) }),
+        body: JSON.stringify({ site, rating, sliderValues }),
       });
       const data = await res.json();
       setAiQuestions(data.questions || []);
@@ -715,7 +715,13 @@ export default function SubmitPage() {
                                 setAiQuestions(prev => {
                                   const existing = prev.map(q => q.question.toLowerCase().trim());
                                   const filtered = (data.questions || []).filter((q: { question: string }) => !existing.includes(q.question.toLowerCase().trim()));
-                                  return [...prev, ...filtered.slice(0, 5 - prev.length)];
+                                  const newQs = filtered.slice(0, 5 - prev.length);
+                                  setAiAnswers(prevAnswers => {
+                                    const updated = { ...prevAnswers };
+                                    newQs.forEach((_: any, i: number) => { updated[prev.length + i] = ""; });
+                                    return updated;
+                                  });
+                                  return [...prev, ...newQs];
                                 });
                               }
                             } catch {}
