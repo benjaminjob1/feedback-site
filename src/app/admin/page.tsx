@@ -216,34 +216,74 @@ export default function AdminPage() {
                 <CardContent className="space-y-3 text-sm">
                   {fb.question_easy ? (
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Easy to use</p>
-                      <p>{fb.question_easy}</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">EASY TO USE</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_easy)/10*100) + "%"}} />
+                        </div>
+                        <span className="text-xs font-medium w-8 text-right">{fb.question_easy}</span>
+                      </div>
                     </div>
                   ) : null}
                   {fb.question_improve ? (
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Could be better</p>
-                      <p>{fb.question_improve}</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">DESIGN &amp; LAYOUT</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_improve)/10*100) + "%"}} />
+                        </div>
+                        <span className="text-xs font-medium w-8 text-right">{fb.question_improve}</span>
+                      </div>
                     </div>
                   ) : null}
                   {fb.question_bugs ? (
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Bugs &amp; issues</p>
-                      <p>{fb.question_bugs}</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">SPEED &amp; PERFORMANCE</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_bugs)/10*100) + "%"}} />
+                        </div>
+                        <span className="text-xs font-medium w-8 text-right">{fb.question_bugs}</span>
+                      </div>
                     </div>
                   ) : null}
                   {fb.question_features ? (
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Requested features</p>
-                      <p>{fb.question_features}</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">FEATURES &amp; FUNCTIONALITY</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{width: (Number(fb.question_features)/10*100) + "%"}} />
+                        </div>
+                        <span className="text-xs font-medium w-8 text-right">{fb.question_features}</span>
+                      </div>
                     </div>
                   ) : null}
                   {fb.question_other ? (
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Anything else</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">OVERALL COMMENTS</p>
                       <p>{fb.question_other}</p>
                     </div>
                   ) : null}
+
+                  {fb.ai_questions ? (() => {
+                    let qa: any[] = [];
+                    try { qa = JSON.parse(fb.ai_questions); } catch {}
+                    return qa.length > 0 ? (
+                      <div className="border-t border-border pt-3 space-y-3">
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
+                        {qa.map((item, i) => {
+                          const question = Object.keys(item)[0];
+                          const answer = item[question];
+                          return (
+                            <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
+                              <p className="text-xs font-medium text-foreground">{question}</p>
+                              <p className="text-sm text-muted-foreground">{answer}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null;
+                  })() : null}
 
                   {fb.status === "pending" ? (
                     <div className="flex gap-2 pt-3 border-t border-border">
