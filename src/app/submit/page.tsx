@@ -225,6 +225,15 @@ export default function SubmitPage() {
     // Reset all comment fields first
     setQuickNote("");
     setOverallComments("");
+    setSliderComments({});
+
+    // Restore slider comments
+    if (fb.slider_comments) {
+      try {
+        const sc = JSON.parse(fb.slider_comments);
+        setSliderComments(sc);
+      } catch {}
+    }
 
     // Try to parse AI questions from stored field
     if (fb.ai_questions) {
