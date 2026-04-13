@@ -46,7 +46,7 @@ export default function HomePage() {
     const sessionData = await sessionRes.json();
     const authUser = sessionData.user;
 
-    if (!authUser || !authUser.role || (authUser.role !== "admin" && authUser.role !== "viewer")) {
+    if (!authUser) {
       setLoading(false);
       return;
     }
@@ -77,13 +77,14 @@ export default function HomePage() {
     return () => subscription.unsubscribe();
   }, [fetchFeedback]);
 
-  const canSeeFeedback = user && (user.role === "admin" || user.role === "viewer");
+  const isAdmin = user?.role === "admin";
+  const isViewer = user?.role === "viewer";
+  const canSeeFeedback = user && (isAdmin || isViewer);
 
-  // Filter: admins see all, viewers see approved only
+  // Admin: all feedback. Viewer: approved only. Regular user: own feedback only.
+  const ownFeedback = user ? feedbackList.filter(f => f.submitted_by === user.id) : [];
   const approved = feedbackList.filter(f => f.status === "approved");
-  const allFeedback = user?.role === "admin" ? feedbackList : approved;
-
-  const pendingOwn = user ? feedbackList.filter(f => f.status === "pending" && f.submitted_by === user.id) : [];
+  const allFeedback = isAdmin ? feedbackList : isViewer ? approved : ownFeedback;
 
   const siteEmoji = (site: string) => SITES.find(s => s.value === site)?.emoji || "📝";
 
@@ -118,11 +119,11 @@ export default function HomePage() {
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
       ) : !canSeeFeedback ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Only admins and viewers can see feedback.</p>
+          <p className="text-muted-foreground">Please log in to view your feedback.</p>
         </div>
       ) : allFeedback.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          {user.role === "viewer" ? "No approved feedback yet." : "No feedback yet. Be the first to submit!"}
+          {isViewer ? "No approved feedback yet." : isAdmin ? "No feedback yet." : "You haven't submitted any feedback yet. Be the first to submit!"}
         </div>
       ) : (
         <div className="space-y-4">
