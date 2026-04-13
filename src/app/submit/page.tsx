@@ -110,6 +110,11 @@ export default function SubmitPage() {
       const fbRes = await fetch("/api/feedback");
       const fbData = await fbRes.json();
       setExistingFeedback(fbData.feedback || []);
+
+      // Check AI availability
+      const aiRes = await fetch("/api/ai/status");
+      const aiData = await aiRes.json();
+      setAiAvailable(aiData.aiAvailable !== false);
     };
     checkUser();
   }, [router]);
