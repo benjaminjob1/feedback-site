@@ -186,6 +186,7 @@ export default function SubmitPage() {
     const questionImprove = String(sliderValues["question_improve"] ?? "");
     const questionBugs = String(sliderValues["question_bugs"] ?? "");
     const questionFeatures = String(sliderValues["question_features"] ?? "");
+    const questionBugsSlider = String(sliderValues["question_bugs_slider"] ?? "");
 
     // AI answers stored as JSON in question_other or a dedicated field
     let aiQuestionsJson = "";
