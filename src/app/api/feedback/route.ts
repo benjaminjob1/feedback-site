@@ -31,10 +31,8 @@ export async function GET(req: NextRequest) {
 
   if (role === "admin") {
     // Admins see everything
-  } else if (role === "viewer") {
-    query = query.or(`status.eq.approved,submitted_by.eq.${userId}`);
   } else {
-    // Regular users see all their own feedback (for editing)
+    // Viewers and regular users: only own feedback
     query = query.eq("submitted_by", userId);
   }
 
