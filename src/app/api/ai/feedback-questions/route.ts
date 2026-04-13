@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         "anthropic-version": "2023-06-01",
       } as HeadersInit,
       body: JSON.stringify({
-        model: "claude_haiku_4_5",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
         messages: [{ role: "user", content: prompt }],
       }),
