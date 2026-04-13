@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Star, ChevronLeft, Check, Pencil, Loader2 } from "lucide-react";
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 type FeedbackLength = "quick" | "standard" | "detailed";
 
@@ -245,7 +245,7 @@ export default function SubmitPage() {
       setExistingFeedback(prev => [...prev, newFb]);
     }
 
-    setStep(4);
+    setStep(TOTAL_STEPS(feedbackLength));
     setLoading(false);
     setTimeout(() => router.push("/"), 2000);
   };
@@ -274,13 +274,12 @@ export default function SubmitPage() {
       {Array.from({ length: totalSteps }, (_, i) => i + 1).map(n => (
         <div key={n} className="flex items-center gap-2">
           <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-              step > n
+            className={"w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors " +
+              (step > n
                 ? "bg-primary text-primary-foreground"
                 : step === n
                 ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                : "bg-secondary"
-            }`}
+                : "bg-secondary")}
           >
             {step > n ? <Check size={12} /> : n}
           </div>
@@ -301,7 +300,7 @@ export default function SubmitPage() {
         <p className="text-muted-foreground mt-1">Help improve Ben&apos;s projects</p>
       </div>
 
-      {step < 4 && renderStepIndicator()}
+      {step < TOTAL_STEPS(feedbackLength) && renderStepIndicator()}
 
       <Card>
         <CardContent className="pt-6">
@@ -327,13 +326,12 @@ export default function SubmitPage() {
                       key={opt.value}
                       onClick={() => !isDisabled && setFeedbackLength(opt.value)}
                       disabled={isDisabled}
-                      className={`p-4 border rounded-lg text-left transition-all flex items-center gap-3 ${
-                        feedbackLength === opt.value
+                      className={"p-4 border rounded-lg text-left transition-all flex items-center gap-3 " +
+                        (feedbackLength === opt.value
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                           : isDisabled
                           ? "border-border opacity-50 cursor-not-allowed"
-                          : "border-border hover:border-primary/60"
-                      }`}
+                          : "border-border hover:border-primary/60")}
                     >
                       <span className="text-2xl">{opt.emoji}</span>
                       <div>
@@ -474,11 +472,11 @@ export default function SubmitPage() {
           {/* ══════════════════════════════════════════
               STEP 3 — Questions (varies by length)
           ══════════════════════════════════════════ */}
-          {step === 3 && (
+          {(step === 3 || step === 4 || step === 5) && (
             <div className="space-y-5">
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep((step - 1) as Step)}
                   className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
                   <ChevronLeft size={14} /> Back
@@ -603,21 +601,8 @@ export default function SubmitPage() {
                 </div>
               )}
 
-              {/* ── DETAILED: STEP 4 = AI QUESTIONS ── */}
               {feedbackLength === "detailed" && step === 4 && (
                 <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setStep(3)}
-                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      <ChevronLeft size={14} /> Back to scales
-                    </button>
-                    <span className="text-sm text-muted-foreground">
-                      Scale answers recorded ✓
-                    </span>
-                  </div>
-
                   <div className="border-t border-border pt-4 space-y-4">
                     <div className="flex items-center gap-2">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
@@ -665,21 +650,8 @@ export default function SubmitPage() {
                 </div>
               )}
 
-              {/* ── DETAILED: STEP 5 = OVERALL COMMENTS ── */}
               {feedbackLength === "detailed" && step === 5 && (
                 <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setStep(4)}
-                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      <ChevronLeft size={14} /> Back to AI questions
-                    </button>
-                    <span className="text-sm text-muted-foreground">
-                      {aiAnswers.filter(a => a.trim()).length}/{aiQuestions.length} AI answers
-                    </span>
-                  </div>
-
                   <div className="space-y-2 pt-2">
                     <Label htmlFor="overall-comments-detailed">
                       Overall comments <span className="text-muted-foreground font-normal">(optional)</span>
@@ -698,77 +670,13 @@ export default function SubmitPage() {
                   </Button>
                 </div>
               )}
-
-              {/* ── DETAILED: step 3 original (combined) — now hidden — */}
-              {feedbackLength === "detailed" && step > 5 && (
-                <div className="space-y-5">
-                  {/* Standard sliders first */}
-                  {SCALE_QUESTIONS.map(({ key, label }) => (
-                      <Label className="text-base font-medium">AI Follow-up Questions</Label>
-                      {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                    </div>
-
-                    {aiLoading && (
-                      <div className="text-center py-4 text-muted-foreground text-sm">
-                        Generating personalized questions...
-                      </div>
-                    )}
-
-                    {!aiLoading && aiError && (
-                      <p className="text-sm text-muted-foreground">
-                        AI follow-up questions unavailable right now.
-                      </p>
-                    )}
-
-                    {!aiLoading && aiQuestions.length === 0 && !aiError && (
-                      <p className="text-sm text-muted-foreground">
-                        AI follow-up questions unavailable.
-                      </p>
-                    )}
-
-                    {aiQuestions.map((q, i) => (
-                      <div key={i} className="space-y-2">
-                        <Label htmlFor={`ai-q-${i}`} className="text-sm font-medium">
-                          {q.question}
-                        </Label>
-                        <Textarea
-                          id={`ai-q-${i}`}
-                          placeholder={q.placeholder || "Your answer..."}
-                          value={aiAnswers[i] ?? ""}
-                          onChange={e => setAiAnswers(prev => ({ ...prev, [i]: e.target.value }))}
-                          rows={2}
-                          className="text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Overall comments */}
-                  <div className="space-y-2 pt-2">
-                    <Label htmlFor="overall-comments-detailed">
-                      Overall comments <span className="text-muted-foreground font-normal">(optional)</span>
-                    </Label>
-                    <Textarea
-                      id="overall-comments-detailed"
-                      placeholder="Anything else on your mind..."
-                      value={overallComments}
-                      onChange={e => setOverallComments(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-
-                  <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-                    {loading ? "Saving..." : editingId ? "Update Feedback" : "Submit Feedback"}
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 
           {/* ══════════════════════════════════════════
-              STEP 4 — Success
+              SUCCESS STEP
           ══════════════════════════════════════════ */}
-          {step === 4 && (
+          {step === TOTAL_STEPS(feedbackLength) && (
             <div className="text-center py-8 space-y-4">
               <div className="text-5xl">✅</div>
               <CardTitle className="text-2xl">Feedback submitted!</CardTitle>
