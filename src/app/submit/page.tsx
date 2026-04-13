@@ -746,7 +746,7 @@ export default function SubmitPage() {
                                   site,
                                   rating,
                                   sliderValues,
-                                  count: 5 - aiQuestions.length,
+                                  count: Math.min(5, (5 - aiQuestions.length) * 3), // request extra to survive filtering
                                   exclude: aiQuestions.map(q => q.question)
                                 }),
                               });
