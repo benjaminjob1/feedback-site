@@ -190,21 +190,22 @@ export default function SubmitPage() {
     } else if (fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
       // Extract from question_other text
       const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-    const after = aiIdx >= 0 ? fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim() : "";
-    let parsed = null;
-    if (after) {
-      try { parsed = JSON.parse(after); } catch {}
-    }
-    if (parsed) {
-      const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
-      setAiQuestions(qa);
-      setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
-    }
+      const after = aiIdx >= 0 ? fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim() : "";
+      let parsed = null;
+      if (after) {
+        try { parsed = JSON.parse(after); } catch {}
+      }
+      if (parsed) {
+        const qa = Object.entries(parsed).map(([question, answer]) => ({ question, placeholder: "", answer }));
+        setAiQuestions(qa);
+        setAiAnswers(qa.map((_, i) => String(Object.values(parsed)[i] ?? "")));
+      }
 
-    setQuickNote("");
-    setOverallComments(fb.question_other || "");
+      setQuickNote("");
+      setOverallComments(fb.question_other || "");
 
-    setStep(2);
+      setStep(2);
+    }
   };
 
   const handleSubmit = async () => {
