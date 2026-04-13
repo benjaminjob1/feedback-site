@@ -50,7 +50,7 @@ const SCALE_QUESTIONS = [
   { key: "question_improve", label: "Design & layout" },
   { key: "question_bugs", label: "Speed & performance" },
   { key: "question_features", label: "Features & functionality" },
-  { key: "question_bugs_slider", label: "Bugs & issues" },
+  { key: "question_bugs_slider", label: "Bugs & issues not present" },
 ] as const;
 
 const TOTAL_STEPS = (length: FeedbackLength) => (length === "quick" ? 3 : length === "standard" ? 4 : 6);

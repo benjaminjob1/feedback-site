@@ -193,7 +193,7 @@ export default function HomePage() {
                 )}
                 {(fb as any).question_bugs_slider && (
                   <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">BUGS &amp; ISSUES NOT PRESENT</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full" style={{width: (Number((fb as any).question_bugs_slider)/10*100)+"%"}} />
