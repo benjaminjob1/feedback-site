@@ -661,7 +661,7 @@ export default function SubmitPage() {
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) && (
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && Object.keys(sliderValues).some(k => sliderValues[k] !== initialSliderValues[k]) ? (
                         <button
                           onClick={() => {
                             if (confirm("Regenerate AI questions? Previous answers will be lost.")) {
