@@ -288,6 +288,11 @@ export default function SubmitPage() {
       setOverallComments(fb.question_other ? fb.question_other.replace(/\[AI Follow-ups\][\s\S]*/, "").trim() : "");
 
       setStep(2);
+    } else {
+      // Standard feedback with just comments — no AI questions
+      setQuickNote("");
+      setOverallComments(fb.question_other || "");
+      setStep(2);
     }
   };
 
