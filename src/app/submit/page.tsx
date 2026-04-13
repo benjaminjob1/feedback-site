@@ -29,6 +29,7 @@ type ExistingFeedback = {
   question_bugs_slider?: string;
   status: string;
   created_at: string;
+  submitted_by: string;
 };
 
 type AIQuestion = { question: string; placeholder: string };
@@ -378,10 +379,11 @@ export default function SubmitPage() {
     setTimeout(() => router.push("/"), 2000);
   };
 
-  // Derived
-  const submittedSites = existingFeedback.map(f => f.site);
-  const availableSites = SITES.filter(s => !submittedSites.includes(s.value));
-  const submittedSitesList = SITES.filter(s => submittedSites.includes(s.value));
+  // Derived — filter to only current user's feedback for edit UI
+  const myFeedback = existingFeedback.filter(f => f.submitted_by === user?.id);
+  const mySubmittedSites = myFeedback.map(f => f.site);
+  const availableSites = SITES.filter(s => !mySubmittedSites.includes(s.value));
+  const submittedSitesList = SITES.filter(s => mySubmittedSites.includes(s.value));
 
   const canProceedFromStep2 = rating > 0;
 
@@ -506,7 +508,7 @@ export default function SubmitPage() {
                   </Label>
                   <div className="grid grid-cols-2 gap-3">
                     {submittedSitesList.map(s => {
-                      const fb = existingFeedback.find((f: ExistingFeedback) => f.site === s.value);
+                      const fb = myFeedback.find((f: ExistingFeedback) => f.site === s.value);
                       return (
                         <div key={s.value} className="p-4 border border-border rounded-lg relative">
                           <div className="flex items-start gap-2">
