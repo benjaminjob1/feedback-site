@@ -19,6 +19,8 @@ type Feedback = {
   question_bugs: string;
   question_features: string;
   question_other: string;
+  ai_questions?: string;
+  feedback_length?: string;
   status: string;
   created_at: string;
   submitted_by: string;
