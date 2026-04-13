@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-4-20250514",
+        model: "claude_haiku_4_5",
         max_tokens: 100,
         messages: [{ role: "user", content: "Say hello" }],
       }),
