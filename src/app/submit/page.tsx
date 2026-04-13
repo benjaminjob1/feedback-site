@@ -682,7 +682,7 @@ export default function SubmitPage() {
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">AI Follow-up Questions</Label>
                       {aiLoading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && hasAnswersChanged ? (
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && hasAnswersChanged && (
                         <button
                           onClick={() => {
                             if (confirm("Regenerate AI questions? Previous answers will be lost.")) {
@@ -693,7 +693,8 @@ export default function SubmitPage() {
                         >
                           ⚠️ Answers changed — Regenerate AI questions?
                         </button>
-                      ) : aiLoaded && aiQuestions.length > 0 && aiQuestions.length < 5 && (
+                      )}
+                      {step === 4 && !aiLoading && aiLoaded && aiQuestions.length > 0 && aiQuestions.length < 5 && (
                         <button
                           onClick={async () => {
                             setAiLoading(true);
