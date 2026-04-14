@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   // Only admins can invite users
   const { data: adminProfile } = await supabaseAdmin
     .from("profiles")
-    .select("role")
+    .select("id, role")
     .eq("email", payload.email.toLowerCase())
     .single();
   if (adminProfile?.role !== "admin") {
