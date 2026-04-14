@@ -108,7 +108,7 @@ export default function HomePage() {
         </div>
         <div className="flex gap-2">
           {(canSeeFeedback || !canSeeFeedback) && (
-            <Link href="/submit"><Button>Submit Feedback</Button></Link>
+            <Link href="/submit"><Button>Submit / Edit Feedback</Button></Link>
           )}
           {canSeeFeedback && user.role === "admin" && (
             <Link href="/admin"><Button variant="outline">Admin</Button></Link>

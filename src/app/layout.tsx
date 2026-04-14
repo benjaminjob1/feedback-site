@@ -179,6 +179,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <title>Feedback Portal | Benjamin Job</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <meta name="description" content="Submit and view feedback on Benjamin Job's projects" />
+      </head>
       <body className="min-h-screen bg-background antialiased">
         <AuthHandler>{children}</AuthHandler>
       </body>

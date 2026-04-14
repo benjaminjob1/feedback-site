@@ -607,6 +607,21 @@ export default function SubmitPage() {
                     setFeedbackLength("standard");
                     setOriginalFeedbackLength(null);
                     setShowLengthWarning(false);
+                    setSliderValues({});
+                    setSliderComments({});
+                    setQuickNote("");
+                    setOverallComments("");
+                    setAiQuestions([]);
+                    setAiAnswers({});
+                    setAiLoading(false);
+                    setAiError(false);
+                    setInitialSliderValues({});
+                    setInitialRating(0);
+                    setInitialQuickNote("");
+                    setAiLoaded(false);
+                    setHasAnswersChanged(false);
+                    setAiPreloaded(false);
+                    setAiAddMoreMsg(null);
                     if (editingId) {
                       setEditingId(null);
                     }
