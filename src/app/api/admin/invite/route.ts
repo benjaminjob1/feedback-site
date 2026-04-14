@@ -14,10 +14,12 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .select("id, role")
     .eq("email", payload.email.toLowerCase())
-    .single();
-  if (adminProfile?.role !== "admin") {
+    .single() as { data: { id: string; role: string } | null };
+  if (!adminProfile || adminProfile.role !== "admin") {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
+
+  const adminUserId = adminProfile.id;
 
   const { email, role } = await req.json();
   if (!email || !role) return NextResponse.json({ error: "Email and role required" }, { status: 400 });
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
   const { data: adminSettings } = await supabaseAdmin
     .from("admin_settings")
     .select("default_notify_new_feedback, default_notify_edited_feedback")
-    .eq("admin_user_id", adminProfile!.id)
+    .eq("admin_user_id", adminUserId)
     .single();
 
   // Create notification preferences for new user with admin's defaults
