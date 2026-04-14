@@ -225,18 +225,23 @@ export default function AdminPage() {
   };
 
   const updateNotificationPref = async (userId: string, field: "notify_new_feedback" | "notify_edited_feedback", value: boolean) => {
+    // Optimistic update
+    setNotificationPrefs(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(userId);
+      if (current) {
+        newMap.set(userId, { ...current, [field]: value });
+      }
+      return newMap;
+    });
+    
     const res = await fetch("/api/admin/notification-preferences", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId, [field]: value }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      setNotificationPrefs(prev => {
-        const newMap = new Map(prev);
-        newMap.set(userId, { ...newMap.get(userId)!, ...data.preferences });
-        return newMap;
-      });
+    if (!res.ok) {
+      alert("Failed to update notification preference.");
     }
   };
 
@@ -266,14 +271,18 @@ export default function AdminPage() {
   };
 
   const updateAdminSetting = async (field: keyof AdminSettings, value: boolean) => {
+    // Optimistic update
+    setAdminSettings(prev => prev ? { ...prev, [field]: value } : prev);
+    
     const res = await fetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      setAdminSettings(data.settings);
+    if (!res.ok) {
+      // Revert on error
+      setAdminSettings(prev => prev ? { ...prev, [field]: !value } : prev);
+      alert("Failed to save setting. Please try again.");
     }
   };
 
@@ -721,43 +730,39 @@ export default function AdminPage() {
                         {/* Notification Preferences */}
                         {!isBen && prefs && (
                           <div className="mt-3 pt-3 border-t border-border">
-                            <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                {prefs.notify_new_feedback ? (
-                                  <Bell size={14} className="text-green-500" />
-                                ) : (
-                                  <BellOff size={14} className="text-muted-foreground" />
-                                )}
-                                <span className="text-muted-foreground">New feedback:</span>
-                                <button
-                                  onClick={() => updateNotificationPref(u.id, "notify_new_feedback", !prefs.notify_new_feedback)}
-                                  className={`text-xs px-2 py-0.5 rounded ${
-                                    prefs.notify_new_feedback 
-                                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                                  }`}
-                                >
-                                  {prefs.notify_new_feedback ? "On" : "Off"}
-                                </button>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {prefs.notify_edited_feedback ? (
-                                  <Bell size={14} className="text-green-500" />
-                                ) : (
-                                  <BellOff size={14} className="text-muted-foreground" />
-                                )}
-                                <span className="text-muted-foreground">Edited:</span>
-                                <button
-                                  onClick={() => updateNotificationPref(u.id, "notify_edited_feedback", !prefs.notify_edited_feedback)}
-                                  className={`text-xs px-2 py-0.5 rounded ${
-                                    prefs.notify_edited_feedback 
-                                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                                  }`}
-                                >
-                                  {prefs.notify_edited_feedback ? "On" : "Off"}
-                                </button>
-                              </div>
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50">
+                                <input
+                                  type="checkbox"
+                                  checked={prefs.notify_new_feedback}
+                                  onChange={() => updateNotificationPref(u.id, "notify_new_feedback", !prefs.notify_new_feedback)}
+                                  className="w-5 h-5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                                />
+                                <div className="flex items-center gap-2">
+                                  {prefs.notify_new_feedback ? (
+                                    <Bell size={16} className="text-green-500" />
+                                  ) : (
+                                    <BellOff size={16} className="text-muted-foreground" />
+                                  )}
+                                  <span className="text-sm">New feedback</span>
+                                </div>
+                              </label>
+                              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50">
+                                <input
+                                  type="checkbox"
+                                  checked={prefs.notify_edited_feedback}
+                                  onChange={() => updateNotificationPref(u.id, "notify_edited_feedback", !prefs.notify_edited_feedback)}
+                                  className="w-5 h-5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                                />
+                                <div className="flex items-center gap-2">
+                                  {prefs.notify_edited_feedback ? (
+                                    <Bell size={16} className="text-green-500" />
+                                  ) : (
+                                    <BellOff size={16} className="text-muted-foreground" />
+                                  )}
+                                  <span className="text-sm">Edited feedback</span>
+                                </div>
+                              </label>
                             </div>
                           </div>
                         )}
