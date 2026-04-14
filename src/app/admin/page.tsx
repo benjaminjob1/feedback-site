@@ -551,10 +551,10 @@ export default function AdminPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Bell size={16} /> Notification Preferences
+                <Bell size={16} /> User Notification Settings
               </CardTitle>
               <CardDescription>
-                Control which users receive email notifications for new or edited feedback
+                Choose which users will email you when they submit or edit feedback
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -574,8 +574,8 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">Enable email notifications for selected users:</p>
                   <div className="flex flex-wrap gap-2">
-                    <p className="text-xs text-muted-foreground w-full">Bulk enable for selected:</p>
                     <Button 
                       size="sm" 
                       variant="outline" 
@@ -609,7 +609,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
                     <Mail size={14} className="inline mr-1" />
-                    Select users below to bulk update their notification preferences
+                    Select users below to choose who emails you when they submit or edit feedback
                   </p>
                   <Button size="sm" variant="outline" onClick={selectAllUsers}>
                     Select All Users
