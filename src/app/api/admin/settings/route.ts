@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   if (!data) {
     const { data: newSettings, error: insertError } = await supabaseAdmin
       .from("admin_settings")
-      .insert({ admin_user_id: profile.id })
+      .upsert({ admin_user_id: profile.id }, { onConflict: "admin_user_id" })
       .select()
       .single();
 
@@ -90,7 +90,7 @@ export async function PATCH(req: NextRequest) {
     .upsert({ 
       admin_user_id: profile.id,
       ...updateData
-    })
+    }, { onConflict: "admin_user_id" })
     .select()
     .single();
 
