@@ -18,14 +18,27 @@ export async function GET(req: NextRequest) {
   const sessionToken = await createSessionToken(payload.email, payload.role);
 
   // Upsert profile so there's always a record for this user
-  await supabaseAdmin
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
     .upsert({
       id: crypto.randomUUID(),
       email: payload.email.toLowerCase(),
       role: payload.role || "user",
       created_at: new Date().toISOString(),
-    }, { onConflict: "email" });
+    }, { onConflict: "email" })
+    .select("id")
+    .single();
+
+  // Create notification preferences for new user (defaults to false for all)
+  if (profile) {
+    await supabaseAdmin
+      .from("notification_preferences")
+      .upsert({
+        user_id: profile.id,
+        notify_new_feedback: false,
+        notify_edited_feedback: false,
+      }, { onConflict: "user_id" });
+  }
 
   // Redirect to home with token in URL, let the page's useEffect set the cookie
   const redirectUrl = new URL("/", req.url);
@@ -60,14 +73,27 @@ export async function POST(req: NextRequest) {
     const sessionToken = await createSessionToken(normalizedEmail, payload.role);
 
     // Upsert profile so there's always a record for this user
-    await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .upsert({
         id: crypto.randomUUID(),
         email: normalizedEmail,
         role: payload.role || "user",
         created_at: new Date().toISOString(),
-      }, { onConflict: "email" });
+      }, { onConflict: "email" })
+      .select("id")
+      .single();
+
+    // Create notification preferences for new user (defaults to false for all)
+    if (profile) {
+      await supabaseAdmin
+        .from("notification_preferences")
+        .upsert({
+          user_id: profile.id,
+          notify_new_feedback: false,
+          notify_edited_feedback: false,
+        }, { onConflict: "user_id" });
+    }
 
     const response = NextResponse.json({ success: true, email: normalizedEmail, role: payload.role });
     response.cookies.set("fb_session", sessionToken, {

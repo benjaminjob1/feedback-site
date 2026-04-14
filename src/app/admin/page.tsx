@@ -480,15 +480,15 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Admin Notification Settings Section */}
+          {/* Notification Defaults for New Users Section */}
           {adminSettings && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Shield size={16} /> My Notification Settings
+                  <Bell size={16} /> Default Notifications for New Users
                 </CardTitle>
                 <CardDescription>
-                  Configure which email notifications you receive
+                  When new users register, these will be their default notification settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -513,9 +513,9 @@ export default function AdminPage() {
                   </div>
                   
                   <div className="border-t border-border pt-3 space-y-3">
-                    <p className="text-sm font-medium">Receive notifications for feedback:</p>
+                    <p className="text-sm font-medium">New users will receive:</p>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">New feedback submitted</p>
+                      <p className="text-sm text-muted-foreground">Notifications for new feedback</p>
                       <button
                         onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
                         className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
@@ -528,7 +528,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">Feedback edited/updated</p>
+                      <p className="text-sm text-muted-foreground">Notifications for edited feedback</p>
                       <button
                         onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
                         className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
