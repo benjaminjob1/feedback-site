@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Check, X, Clock, Users, Shield } from "lucide-react";
+import { Check, X, Clock, Users, Shield, Bell, BellOff, Mail } from "lucide-react";
 import { SITES, BEN_EMAIL } from "@/lib/supabase";
 
 type Feedback = {
@@ -38,10 +37,21 @@ type User = {
   created_at: string;
 };
 
+type NotificationPrefs = {
+  id: string;
+  user_id: string;
+  notify_new_feedback: boolean;
+  notify_edited_feedback: boolean;
+  created_at: string;
+  updated_at: string;
+  profiles?: { full_name: string; email: string };
+};
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [notificationPrefs, setNotificationPrefs] = useState<Map<string, NotificationPrefs>>(new Map());
   const [tab, setTab] = useState<"feedback" | "users">("feedback");
   const [loading, setLoading] = useState(true);
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -51,6 +61,8 @@ export default function AdminPage() {
   const [editingUserEmail, setEditingUserEmail] = useState<string | null>(null);
   const [editingUserName, setEditingUserName] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -71,6 +83,17 @@ export default function AdminPage() {
       }
       const profileData = await profileRes.json();
       setUsers(profileData.users || []);
+
+      // Fetch notification preferences
+      const prefsRes = await fetch("/api/admin/notification-preferences");
+      if (prefsRes.ok) {
+        const prefsData = await prefsRes.json();
+        const prefsMap = new Map<string, NotificationPrefs>();
+        (prefsData.preferences || []).forEach((p: NotificationPrefs) => {
+          prefsMap.set(p.user_id, p);
+        });
+        setNotificationPrefs(prefsMap);
+      }
 
       const fbRes = await fetch("/api/feedback");
       const fbData = await fbRes.json();
@@ -158,6 +181,72 @@ export default function AdminPage() {
     }
   };
 
+  const toggleUserSelection = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const selectAllUsers = () => {
+    // Select all except admin's own account
+    const adminUser = users.find(u => u.email.toLowerCase() === BEN_EMAIL.toLowerCase());
+    const newSelected = new Set<string>();
+    users.forEach(u => {
+      if (adminUser && u.id === adminUser.id) return;
+      newSelected.add(u.id);
+    });
+    setSelectedUsers(newSelected);
+  };
+
+  const deselectAllUsers = () => {
+    setSelectedUsers(new Set());
+  };
+
+  const updateNotificationPref = async (userId: string, field: "notify_new_feedback" | "notify_edited_feedback", value: boolean) => {
+    const res = await fetch("/api/admin/notification-preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, [field]: value }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setNotificationPrefs(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userId, { ...newMap.get(userId)!, ...data.preferences });
+        return newMap;
+      });
+    }
+  };
+
+  const bulkUpdateNotifications = async (field: "notify_new_feedback" | "notify_edited_feedback", value: boolean) => {
+    if (selectedUsers.size === 0) return;
+    setBulkUpdating(true);
+    const res = await fetch("/api/admin/notification-preferences/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        user_ids: Array.from(selectedUsers), 
+        [field]: value 
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // Update local state
+      setNotificationPrefs(prev => {
+        const newMap = new Map(prev);
+        (data.preferences || []).forEach((p: NotificationPrefs) => {
+          newMap.set(p.user_id, p);
+        });
+        return newMap;
+      });
+    }
+    setBulkUpdating(false);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 max-w-5xl">
@@ -165,6 +254,8 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const adminUser = users.find(u => u.email.toLowerCase() === BEN_EMAIL.toLowerCase());
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -254,7 +345,6 @@ export default function AdminPage() {
                       </>
                     );
                   })()}
-                  {/* Overall comments */}
                   {(() => {
                     const otherText = fb.question_other
                       ? fb.question_other.replace(/\[AI Follow-ups\][\s\S]*/, "").trim()
@@ -267,7 +357,6 @@ export default function AdminPage() {
                     ) : null;
                   })()}
 
-                  {/* AI Q&A from ai_questions (new) or question_other (old) */}
                   {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
                     let qa: any[] = [];
                     if (fb.ai_questions) {
@@ -361,95 +450,229 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
+          {/* Notification Preferences Section */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell size={16} /> Notification Preferences
+              </CardTitle>
+              <CardDescription>
+                Control which users receive email notifications for new or edited feedback
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Bulk Actions */}
+              {selectedUsers.size > 0 ? (
+                <div className="bg-muted/50 rounded-lg p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      {selectedUsers.size} user{selectedUsers.size !== 1 ? "s" : ""} selected
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={deselectAllUsers}>
+                        Deselect All
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={selectAllUsers}>
+                        Select All
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <p className="text-xs text-muted-foreground w-full">Bulk enable for selected:</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => bulkUpdateNotifications("notify_new_feedback", true)}
+                      disabled={bulkUpdating}
+                    >
+                      <Bell size={12} className="mr-1" /> New Feedback
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => bulkUpdateNotifications("notify_edited_feedback", true)}
+                      disabled={bulkUpdating}
+                    >
+                      <Bell size={12} className="mr-1" /> Edited Feedback
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive" 
+                      onClick={() => {
+                        bulkUpdateNotifications("notify_new_feedback", false);
+                        bulkUpdateNotifications("notify_edited_feedback", false);
+                      }}
+                      disabled={bulkUpdating}
+                    >
+                      <BellOff size={12} className="mr-1" /> Disable All
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    <Mail size={14} className="inline mr-1" />
+                    Select users below to bulk update their notification preferences
+                  </p>
+                  <Button size="sm" variant="outline" onClick={selectAllUsers}>
+                    Select All Users
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="space-y-3">
             {users.map(u => {
               const isBen = u.email.toLowerCase() === BEN_EMAIL.toLowerCase();
               const isAdmin = user && user.role === "admin";
+              const prefs = notificationPrefs.get(u.id);
+              const isSelected = selectedUsers.has(u.id);
+
               return (
-                <Card key={u.id}>
+                <Card key={u.id} className={isSelected ? "border-primary" : ""}>
                   <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-3">
+                      {/* Selection checkbox */}
+                      {!isBen && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleUserSelection(u.id)}
+                          className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                        />
+                      )}
+                      
                       <div className="flex-1">
-                        {editingUserEmail === u.email ? (
-                          <div className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              value={editingUserName}
-                              onChange={e => setEditingUserName(e.target.value)}
-                              className="border border-border rounded px-2 py-1 text-sm bg-background w-36"
-                              autoFocus
-                            />
-                            <button onClick={() => saveUserName()} disabled={savingName} className="text-xs text-primary hover:underline disabled:opacity-50">
-                              {savingName ? "Saving..." : "Save"}
-                            </button>
-                            <button onClick={() => setEditingUserEmail(null)} className="text-xs text-muted-foreground hover:underline">
-                              Cancel
-                            </button>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            {editingUserEmail === u.email ? (
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="text"
+                                  value={editingUserName}
+                                  onChange={e => setEditingUserName(e.target.value)}
+                                  className="border border-border rounded px-2 py-1 text-sm bg-background w-36"
+                                  autoFocus
+                                />
+                                <button onClick={() => saveUserName()} disabled={savingName} className="text-xs text-primary hover:underline disabled:opacity-50">
+                                  {savingName ? "Saving..." : "Save"}
+                                </button>
+                                <button onClick={() => setEditingUserEmail(null)} className="text-xs text-muted-foreground hover:underline">
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="font-medium">{u.full_name || "No name"}</p>
+                                <p className="text-sm text-muted-foreground">{u.email}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                </p>
+                              </>
+                            )}
                           </div>
-                        ) : (
-                          <>
-                            <p className="font-medium">{u.full_name || "No name"}</p>
-                            <p className="text-sm text-muted-foreground">{u.email}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Joined {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                            </p>
-                          </>
+                          
+                          <div className="flex items-center gap-3">
+                            <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                              {u.role}
+                            </Badge>
+                            {isBen ? (
+                              <span className="text-xs text-muted-foreground">Ben (you)</span>
+                            ) : isAdmin ? (
+                              <button
+                                onClick={() => { setEditingUserEmail(u.email); setEditingUserName(u.full_name || ""); }}
+                                className="text-xs text-muted-foreground hover:text-primary hover:underline mr-2"
+                              >
+                                Edit name
+                              </button>
+                            ) : null}
+                            {isAdmin && !isBen ? (
+                              <div className="flex gap-2 flex-wrap">
+                                {u.role === "user" ? (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                      Make Viewer
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
+                                      Make Admin
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                      Remove
+                                    </Button>
+                                  </>
+                                ) : null}
+                                {u.role === "viewer" ? (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
+                                      Make User
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
+                                      Make Admin
+                                    </Button>
+                                  </>
+                                ) : null}
+                                {u.role === "admin" ? (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
+                                      Make Viewer
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
+                                      Make User
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                      Remove
+                                    </Button>
+                                  </>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        
+                        {/* Notification Preferences */}
+                        {!isBen && prefs && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                {prefs.notify_new_feedback ? (
+                                  <Bell size={14} className="text-green-500" />
+                                ) : (
+                                  <BellOff size={14} className="text-muted-foreground" />
+                                )}
+                                <span className="text-muted-foreground">New feedback:</span>
+                                <button
+                                  onClick={() => updateNotificationPref(u.id, "notify_new_feedback", !prefs.notify_new_feedback)}
+                                  className={`text-xs px-2 py-0.5 rounded ${
+                                    prefs.notify_new_feedback 
+                                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                  }`}
+                                >
+                                  {prefs.notify_new_feedback ? "On" : "Off"}
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {prefs.notify_edited_feedback ? (
+                                  <Bell size={14} className="text-green-500" />
+                                ) : (
+                                  <BellOff size={14} className="text-muted-foreground" />
+                                )}
+                                <span className="text-muted-foreground">Edited:</span>
+                                <button
+                                  onClick={() => updateNotificationPref(u.id, "notify_edited_feedback", !prefs.notify_edited_feedback)}
+                                  className={`text-xs px-2 py-0.5 rounded ${
+                                    prefs.notify_edited_feedback 
+                                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                  }`}
+                                >
+                                  {prefs.notify_edited_feedback ? "On" : "Off"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant={u.role === "admin" ? "default" : "secondary"}>
-                          {u.role}
-                        </Badge>
-                        {isBen ? (
-                          <span className="text-xs text-muted-foreground">Ben (you)</span>
-                        ) : isAdmin ? (
-                          <button
-                            onClick={() => { setEditingUserEmail(u.email); setEditingUserName(u.full_name || ""); }}
-                            className="text-xs text-muted-foreground hover:text-primary hover:underline mr-2"
-                          >
-                            Edit name
-                          </button>
-                        ) : null}
-                        {isAdmin && !isBen ? (
-                          <div className="flex gap-2">
-                            {u.role === "user" ? (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                                  Make Viewer
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
-                                  Make Admin
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
-                                  Remove
-                                </Button>
-                              </>
-                            ) : null}
-                            {u.role === "viewer" ? (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
-                                  Make User
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
-                                  Make Admin
-                                </Button>
-                              </>
-                            ) : null}
-                            {u.role === "admin" ? (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "viewer")}>
-                                  Make Viewer
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
-                                  Make User
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
-                                  Remove
-                                </Button>
-                              </>
-                            ) : null}
-                          </div>
-                        ) : null}
                       </div>
                     </div>
                   </CardContent>

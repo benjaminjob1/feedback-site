@@ -1,0 +1,74 @@
+-- Notification Preferences Table
+-- Run this in Supabase SQL Editor to create the table
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  notify_new_feedback BOOLEAN DEFAULT true NOT NULL,
+  notify_edited_feedback BOOLEAN DEFAULT true NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id)
+);
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_notification_prefs_user_id ON notification_preferences(user_id);
+
+-- Enable RLS
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Admins can manage all preferences
+CREATE POLICY "Admins can manage all notification preferences"
+  ON notification_preferences
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+    )
+  );
+
+-- Policy: Users can view their own preferences
+CREATE POLICY "Users can view own notification preferences"
+  ON notification_preferences
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Policy: Users can update their own preferences
+CREATE POLICY "Users can update own notification preferences"
+  ON notification_preferences
+  FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Policy: Users can insert their own preferences
+CREATE POLICY "Users can insert own notification preferences"
+  ON notification_preferences
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Function to auto-create default preferences for new users
+CREATE OR REPLACE FUNCTION create_default_notification_prefs()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notification_preferences (user_id)
+  VALUES (NEW.id)
+  ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to auto-create preferences when a new profile is inserted
+DROP TRIGGER IF EXISTS on_new_profile_create_notification_prefs ON profiles;
+CREATE TRIGGER on_new_profile_create_notification_prefs
+  AFTER INSERT ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION create_default_notification_prefs();
+
+-- Backfill existing users with default preferences
+INSERT INTO notification_preferences (user_id)
+SELECT id FROM profiles
+WHERE NOT EXISTS (
+  SELECT 1 FROM notification_preferences WHERE notification_preferences.user_id = profiles.id
+)
+ON CONFLICT (user_id) DO NOTHING;
