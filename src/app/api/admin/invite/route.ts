@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const { data: adminSettings } = await supabaseAdmin
     .from("admin_settings")
     .select("default_notify_new_feedback, default_notify_edited_feedback")
-    .eq("admin_user_id", adminProfile?.id)
+    .eq("admin_user_id", adminProfile!.id)
     .single();
 
   // Create notification preferences for new user with admin's defaults
