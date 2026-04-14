@@ -480,15 +480,15 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Notification Defaults for New Users Section */}
+          {/* Notification Preferences for New Users Section */}
           {adminSettings && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Bell size={16} /> My Notification Defaults for New Users
+                  <Bell size={16} /> Email Notifications for New Users
                 </CardTitle>
                 <CardDescription>
-                  When YOU add a new user, these will be their default notification settings
+                  Receive emails when new users sign up and submit/edit feedback
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -502,9 +502,9 @@ export default function AdminPage() {
                     />
                     <div>
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <Mail size={14} /> Email me when new user signs up
+                        <Mail size={14} /> Email me when a new user signs up
                       </p>
-                      <p className="text-xs text-muted-foreground">You will receive an email notification</p>
+                      <p className="text-xs text-muted-foreground">When any new user registers on the site</p>
                     </div>
                   </label>
                   
