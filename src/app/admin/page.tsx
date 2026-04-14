@@ -513,11 +513,10 @@ export default function AdminPage() {
                   </div>
                   
                   <div className="border-t border-border pt-3 space-y-3">
-                    <p className="text-sm font-medium">Default settings for each new user:</p>
+                    <p className="text-sm font-medium">Email me when this user:</p>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">New user receives new feedback notifications</p>
-                        <p className="text-xs text-muted-foreground">Applied when you add a new user</p>
+                        <p className="text-sm text-muted-foreground">Creates new feedback</p>
                       </div>
                       <button
                         onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
@@ -532,8 +531,7 @@ export default function AdminPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">New user receives edited feedback notifications</p>
-                        <p className="text-xs text-muted-foreground">Applied when you add a new user</p>
+                        <p className="text-sm text-muted-foreground">Edits or updates their feedback</p>
                       </div>
                       <button
                         onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
