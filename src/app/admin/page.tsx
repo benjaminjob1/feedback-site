@@ -493,57 +493,45 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={adminSettings.notify_new_user_signup}
+                      onChange={() => updateAdminSetting("notify_new_user_signup", !adminSettings.notify_new_user_signup)}
+                      className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                    />
                     <div>
                       <p className="text-sm font-medium flex items-center gap-2">
                         <Mail size={14} /> Email me when new user signs up
                       </p>
                       <p className="text-xs text-muted-foreground">You will receive an email notification</p>
                     </div>
-                    <button
-                      onClick={() => updateAdminSetting("notify_new_user_signup", !adminSettings.notify_new_user_signup)}
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
-                        adminSettings.notify_new_user_signup 
-                          ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {adminSettings.notify_new_user_signup ? "On" : "Off"}
-                    </button>
-                  </div>
+                  </label>
                   
                   <div className="border-t border-border pt-3 space-y-3">
                     <p className="text-sm font-medium">Email me when this user:</p>
-                    <div className="flex items-center justify-between">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={adminSettings.default_notify_new_feedback}
+                        onChange={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
+                        className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                      />
                       <div>
                         <p className="text-sm text-muted-foreground">Creates new feedback</p>
                       </div>
-                      <button
-                        onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
-                          adminSettings.default_notify_new_feedback 
-                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {adminSettings.default_notify_new_feedback ? "On" : "Off"}
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between">
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={adminSettings.default_notify_edited_feedback}
+                        onChange={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
+                        className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                      />
                       <div>
                         <p className="text-sm text-muted-foreground">Edits or updates their feedback</p>
                       </div>
-                      <button
-                        onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
-                          adminSettings.default_notify_edited_feedback 
-                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {adminSettings.default_notify_edited_feedback ? "On" : "Off"}
-                      </button>
-                    </div>
+                    </label>
                   </div>
                 </div>
               </CardContent>
