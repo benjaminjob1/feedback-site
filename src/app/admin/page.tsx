@@ -485,10 +485,10 @@ export default function AdminPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Shield size={16} /> Admin Notification Settings
+                  <Shield size={16} /> My Notification Settings
                 </CardTitle>
                 <CardDescription>
-                  Configure your personal notification preferences and defaults for new users
+                  Configure which email notifications you receive
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -496,9 +496,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <Mail size={14} /> Notify me when new users sign up
+                        <Mail size={14} /> New user signs up
                       </p>
-                      <p className="text-xs text-muted-foreground">Receive email when new users register</p>
+                      <p className="text-xs text-muted-foreground">Receive email when a new user registers</p>
                     </div>
                     <button
                       onClick={() => updateAdminSetting("notify_new_user_signup", !adminSettings.notify_new_user_signup)}
@@ -512,39 +512,34 @@ export default function AdminPage() {
                     </button>
                   </div>
                   
-                  <div className="border-t border-border pt-3">
-                    <p className="text-sm font-medium mb-3">Default settings for new users:</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Notify new users of new feedback</p>
-                        <button
-                          onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
-                          className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                            adminSettings.default_notify_new_feedback 
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          }`}
-                        >
-                          {adminSettings.default_notify_new_feedback ? "On" : "Off"}
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Notify new users of edited feedback</p>
-                        <button
-                          onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
-                          className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                            adminSettings.default_notify_edited_feedback 
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          }`}
-                        >
-                          {adminSettings.default_notify_edited_feedback ? "On" : "Off"}
-                        </button>
-                      </div>
+                  <div className="border-t border-border pt-3 space-y-3">
+                    <p className="text-sm font-medium">Receive notifications for feedback:</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">New feedback submitted</p>
+                      <button
+                        onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                          adminSettings.default_notify_new_feedback 
+                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {adminSettings.default_notify_new_feedback ? "On" : "Off"}
+                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      These defaults apply when new users are added. Existing users keep their current settings.
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Feedback edited/updated</p>
+                      <button
+                        onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                          adminSettings.default_notify_edited_feedback 
+                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {adminSettings.default_notify_edited_feedback ? "On" : "Off"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
