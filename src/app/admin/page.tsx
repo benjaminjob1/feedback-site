@@ -509,7 +509,7 @@ export default function AdminPage() {
                   </label>
                   
                   <div className="border-t border-border pt-3 space-y-3">
-                    <p className="text-sm font-medium">Email me when this user:</p>
+                    <p className="text-sm font-medium">Email me when a new user:</p>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
