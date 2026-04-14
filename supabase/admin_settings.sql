@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS admin_settings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   admin_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  notify_new_user_signup BOOLEAN DEFAULT true NOT NULL,
+  notify_new_user_signup BOOLEAN DEFAULT false NOT NULL,
   default_notify_new_feedback BOOLEAN DEFAULT false NOT NULL,
   default_notify_edited_feedback BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,

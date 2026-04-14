@@ -55,6 +55,18 @@ export async function POST(req: NextRequest) {
       notify_edited_feedback: adminSettings?.default_notify_edited_feedback ?? false,
     }, { onConflict: "user_id" });
 
+  // If new user is an admin, create their admin_settings with defaults (all false)
+  if (role === "admin") {
+    await supabaseAdmin
+      .from("admin_settings")
+      .upsert({
+        admin_user_id: profile.id,
+        notify_new_user_signup: false,
+        default_notify_new_feedback: false,
+        default_notify_edited_feedback: false,
+      }, { onConflict: "admin_user_id" });
+  }
+
   // Generate a magic link for this user
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://feedback.benjob.me";
   const sessionToken = await createSessionToken(email.toLowerCase(), role);
