@@ -37,6 +37,22 @@ export async function POST(req: NextRequest) {
 
   if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 });
 
+  // Get admin's default notification preferences
+  const { data: adminSettings } = await supabaseAdmin
+    .from("admin_settings")
+    .select("default_notify_new_feedback, default_notify_edited_feedback")
+    .eq("admin_user_id", adminProfile?.id)
+    .single();
+
+  // Create notification preferences for new user with admin's defaults
+  await supabaseAdmin
+    .from("notification_preferences")
+    .upsert({
+      user_id: profile.id,
+      notify_new_feedback: adminSettings?.default_notify_new_feedback ?? false,
+      notify_edited_feedback: adminSettings?.default_notify_edited_feedback ?? false,
+    }, { onConflict: "user_id" });
+
   // Generate a magic link for this user
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://feedback.benjob.me";
   const sessionToken = await createSessionToken(email.toLowerCase(), role);

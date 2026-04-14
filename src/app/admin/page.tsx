@@ -47,6 +47,16 @@ type NotificationPrefs = {
   profiles?: { full_name: string; email: string };
 };
 
+type AdminSettings = {
+  id: string;
+  admin_user_id: string;
+  notify_new_user_signup: boolean;
+  default_notify_new_feedback: boolean;
+  default_notify_edited_feedback: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
@@ -63,6 +73,7 @@ export default function AdminPage() {
   const [savingName, setSavingName] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -93,6 +104,13 @@ export default function AdminPage() {
           prefsMap.set(p.user_id, p);
         });
         setNotificationPrefs(prefsMap);
+      }
+
+      // Fetch admin settings
+      const settingsRes = await fetch("/api/admin/settings");
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        setAdminSettings(settingsData.settings);
       }
 
       const fbRes = await fetch("/api/feedback");
@@ -245,6 +263,18 @@ export default function AdminPage() {
       });
     }
     setBulkUpdating(false);
+  };
+
+  const updateAdminSetting = async (field: keyof AdminSettings, value: boolean) => {
+    const res = await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAdminSettings(data.settings);
+    }
   };
 
   if (loading) {
@@ -449,6 +479,77 @@ export default function AdminPage() {
               {addSuccess ? <p className="text-sm text-green-500">{addSuccess}</p> : null}
             </CardContent>
           </Card>
+
+          {/* Admin Notification Settings Section */}
+          {adminSettings && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield size={16} /> Admin Notification Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure your personal notification preferences and defaults for new users
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Mail size={14} /> Notify me when new users sign up
+                      </p>
+                      <p className="text-xs text-muted-foreground">Receive email when new users register</p>
+                    </div>
+                    <button
+                      onClick={() => updateAdminSetting("notify_new_user_signup", !adminSettings.notify_new_user_signup)}
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                        adminSettings.notify_new_user_signup 
+                          ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {adminSettings.notify_new_user_signup ? "On" : "Off"}
+                    </button>
+                  </div>
+                  
+                  <div className="border-t border-border pt-3">
+                    <p className="text-sm font-medium mb-3">Default settings for new users:</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">Notify new users of new feedback</p>
+                        <button
+                          onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
+                          className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                            adminSettings.default_notify_new_feedback 
+                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {adminSettings.default_notify_new_feedback ? "On" : "Off"}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">Notify new users of edited feedback</p>
+                        <button
+                          onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
+                          className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                            adminSettings.default_notify_edited_feedback 
+                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {adminSettings.default_notify_edited_feedback ? "On" : "Off"}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      These defaults apply when new users are added. Existing users keep their current settings.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Notification Preferences Section */}
           <Card>
