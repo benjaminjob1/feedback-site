@@ -193,6 +193,18 @@ export default function AdminPage() {
     }
     if (data.user) {
       setUsers(prev => [...prev.filter(u => u.id !== data.user.id), data.user]);
+      
+      // Refresh notification preferences to show new user's checkboxes
+      const prefsRes = await fetch("/api/admin/notification-preferences");
+      if (prefsRes.ok) {
+        const prefsData = await prefsRes.json();
+        const prefsMap = new Map<string, NotificationPrefs>();
+        (prefsData.preferences || []).forEach((p: NotificationPrefs) => {
+          prefsMap.set(p.user_id, p);
+        });
+        setNotificationPrefs(prefsMap);
+      }
+      
       setNewUserEmail("");
       setAddSuccess(data.user.email + " added as " + data.user.role + "!");
       setTimeout(() => setAddSuccess(""), 3000);
