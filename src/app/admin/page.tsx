@@ -485,10 +485,10 @@ export default function AdminPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Bell size={16} /> Default Notifications for New Users
+                  <Bell size={16} /> My Notification Defaults for New Users
                 </CardTitle>
                 <CardDescription>
-                  When new users register, these will be their default notification settings
+                  When YOU add a new user, these will be their default notification settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -496,13 +496,13 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <Mail size={14} /> New user signs up
+                        <Mail size={14} /> Email me when new user signs up
                       </p>
-                      <p className="text-xs text-muted-foreground">Receive email when a new user registers</p>
+                      <p className="text-xs text-muted-foreground">You will receive an email notification</p>
                     </div>
                     <button
                       onClick={() => updateAdminSetting("notify_new_user_signup", !adminSettings.notify_new_user_signup)}
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
                         adminSettings.notify_new_user_signup 
                           ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -513,12 +513,15 @@ export default function AdminPage() {
                   </div>
                   
                   <div className="border-t border-border pt-3 space-y-3">
-                    <p className="text-sm font-medium">New users will receive:</p>
+                    <p className="text-sm font-medium">Default settings for each new user:</p>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">Notifications for new feedback</p>
+                      <div>
+                        <p className="text-sm text-muted-foreground">New user receives new feedback notifications</p>
+                        <p className="text-xs text-muted-foreground">Applied when you add a new user</p>
+                      </div>
                       <button
                         onClick={() => updateAdminSetting("default_notify_new_feedback", !adminSettings.default_notify_new_feedback)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
                           adminSettings.default_notify_new_feedback 
                             ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -528,10 +531,13 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">Notifications for edited feedback</p>
+                      <div>
+                        <p className="text-sm text-muted-foreground">New user receives edited feedback notifications</p>
+                        <p className="text-xs text-muted-foreground">Applied when you add a new user</p>
+                      </div>
                       <button
                         onClick={() => updateAdminSetting("default_notify_edited_feedback", !adminSettings.default_notify_edited_feedback)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors cursor-pointer ${
                           adminSettings.default_notify_edited_feedback 
                             ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
