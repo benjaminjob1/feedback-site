@@ -17,6 +17,7 @@ type ActionPlan = {
   feedback_ids?: string;
   priority: string;
   status: string;
+  comments?: string;
   created_at: string;
 };
 
