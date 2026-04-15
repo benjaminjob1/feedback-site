@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth-server";
 
 // Generate a short AI summary for feedback
-async function generateFeedbackSummary(feedback: any): Promise<string | null> {
+async function generateFeedbackSummary(feedback: any, apiKey: string): Promise<string | null> {
   const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other } = feedback;
   
   const ratingText = rating ? `${rating}/5 stars` : "No rating";
@@ -17,25 +17,22 @@ async function generateFeedbackSummary(feedback: any): Promise<string | null> {
   if (question_bugs_slider) sliderScores.push(`No bugs: ${question_bugs_slider}/10`);
   
   const context = `Site: ${siteText}, Rating: ${ratingText}${sliderScores.length > 0 ? ", Scores: " + sliderScores.join(", ") : ""}${question_other ? ", Comment: " + question_other.substring(0, 200) : ""}`;
-
-  const prompt = `Summarize this feedback in 2-3 short sentences max, as if you're a concise assistant: "${context}"
-  
-Give only the summary, no labels or prefixes. Be very brief.`;
+  const prompt = `Summarize this feedback in 2-3 short sentences max: "${context}". Be very brief.`;
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
     
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+        "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-7-latest",
-        max_tokens: 100,
+        max_tokens: 150,
         messages: [{ role: "user", content: prompt }]
       }),
       signal: controller.signal,
@@ -43,12 +40,17 @@ Give only the summary, no labels or prefixes. Be very brief.`;
     
     clearTimeout(timeout);
     
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[generate-summaries] API error:", res.status, errText);
+      return null;
+    }
     
     const data = await res.json();
     const summary = data.content?.[0]?.text?.trim();
     return summary || null;
-  } catch {
+  } catch (err) {
+    console.error("[generate-summaries] Error:", err);
     return null;
   }
 }
@@ -56,6 +58,12 @@ Give only the summary, no labels or prefixes. Be very brief.`;
 export async function POST(req: NextRequest) {
   // Note: Not requiring auth - this is an internal API to populate cached data
   // In production, you may want to add proper authentication
+
+  // Check if ANTHROPIC_API_KEY is set
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+  }
 
   // Get all feedback without summaries
   const { data: feedbackWithoutSummaries, error } = await supabaseAdmin
@@ -66,10 +74,11 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   let generated = 0;
+  let failed = 0;
   
   // Generate summaries for each
   for (const fb of feedbackWithoutSummaries || []) {
-    const summary = await generateFeedbackSummary(fb);
+    const summary = await generateFeedbackSummary(fb, apiKey);
     const fbId = fb.id as string;
     if (summary) {
       await supabaseAdmin
@@ -77,11 +86,13 @@ export async function POST(req: NextRequest) {
         .update({ cached_ai_summary: summary })
         .eq("id", fbId);
       generated++;
+    } else {
+      failed++;
     }
     
     // Small delay to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  return NextResponse.json({ success: true, generated });
+  return NextResponse.json({ success: true, generated, failed, total: feedbackWithoutSummaries?.length || 0 });
 }
