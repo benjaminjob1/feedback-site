@@ -316,6 +316,7 @@ export default function AllPlans() {
   }, [user]);
 
   // Auto-select plans from URL query param (for shared links)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (checking) return;
     const params = new URLSearchParams(window.location.search);

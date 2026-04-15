@@ -5,7 +5,7 @@ import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle, Circle } from "lucide-react";
 
 type Feedback = {
   id: string;
@@ -497,6 +497,7 @@ export default function SiteActions() {
   }, []);
 
   // Auto-select site from URL query param on load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (checking) return;
     const params = new URLSearchParams(window.location.search);
