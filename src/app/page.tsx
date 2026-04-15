@@ -217,7 +217,7 @@ export default function Home() {
     }
 
     query.then(({ data }) => {
-      setAllFeedback((data as Feedback[]) || []);
+      setAllFeedback((data as any) || []);
       setLoading(false);
     });
   };
