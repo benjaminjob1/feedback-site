@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth-server";
 
 // Generate a short AI summary for feedback
-async function generateFeedbackSummary(feedback: any): Promise<string> {
+async function generateFeedbackSummary(feedback: any): Promise<string | null> {
   const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other } = feedback;
   
   const ratingText = rating ? `${rating}/5 stars` : "No rating";
