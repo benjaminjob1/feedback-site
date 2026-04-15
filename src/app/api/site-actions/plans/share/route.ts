@@ -60,26 +60,24 @@ The following action plans have been shared with you for review:
 ${plansList}
 
 ---
-Shared from Feedback Portal
-`;
+Shared from Feedback Portal`;
 
-  // Send email via Resend
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
+  // Send email via AgentMail (same as login system)
+  const agentMailKey = process.env.AGENTMAIL_API_KEY;
+  if (!agentMailKey) {
     return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.agentmail.to/v0/inboxes/bensbot@agentmail.to/messages/send", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${agentMailKey}`,
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: "Feedback Portal <noreply@benjob.me>",
         to: emails,
-        subject: `Action Plans Shared: ${plans.length} plan${plans.length !== 1 ? "s" : ""} for review`,
+        subject: `Action Plans: ${plans.length} plan${plans.length !== 1 ? "s" : ""} for review`,
         text: emailBody,
       }),
     });
