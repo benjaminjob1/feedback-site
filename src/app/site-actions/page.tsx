@@ -234,11 +234,12 @@ function FeedbackCard({ fb, selected, onToggle }: { fb: Feedback; selected: bool
   );
 }
 
-function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDelete: (id: string) => void; onUpdate: (id: string, status: string, priority: string) => void }) {
+function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDelete: (id: string) => void; onUpdate: (id: string, status: string, priority: string, comments?: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState(plan.status);
   const [editPriority, setEditPriority] = useState(plan.priority);
+  const [editComments, setEditComments] = useState(plan.comments || "");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackItems, setFeedbackItems] = useState<any[]>([]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
@@ -264,7 +265,7 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
   };
 
   const handleSave = () => {
-    onUpdate(plan.id, editStatus, editPriority);
+    onUpdate(plan.id, editStatus, editPriority, editComments);
     setEditing(false);
   };
 
@@ -376,20 +377,36 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
                   </select>
                 </div>
               </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Comments</label>
+                <textarea
+                  value={editComments}
+                  onChange={(e) => setEditComments(e.target.value)}
+                  placeholder="Add comments about this action plan..."
+                  className="w-full bg-background border rounded px-2 py-1 text-sm h-20"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSave(); }}>Save</Button>
                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditing(false); }}>Cancel</Button>
               </div>
             </div>
           ) : (
-            <div className="pt-2 border-t border-border flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-              >
-                Edit Status/Priority
-              </Button>
+            <div className="pt-2 border-t border-border">
+              {plan.comments && (
+                <div className="text-sm text-muted-foreground italic bg-muted/20 rounded p-2 mb-2">
+                  💬 {plan.comments}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+                >
+                  Edit Status/Priority
+                </Button>
               {feedbackIds.length > 0 && (
                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>
                   View Feedback ({feedbackIds.length})
@@ -585,16 +602,16 @@ export default function SiteActions() {
       .catch(() => {});
   };
 
-  const handleUpdatePlan = (id: string, status: string, priority: string) => {
+  const handleUpdatePlan = (id: string, status: string, priority: string, comments?: string) => {
     fetch("/api/site-actions/plans", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status, priority }),
+      body: JSON.stringify({ id, status, priority, comments }),
     })
       .then(res => res.json())
       .then(data => {
         if (data.plan) {
-          setActionPlans(prev => prev.map(p => p.id === id ? { ...p, status, priority } : p));
+          setActionPlans(prev => prev.map(p => p.id === id ? { ...p, status, priority, comments } : p));
         }
       })
       .catch(() => {});

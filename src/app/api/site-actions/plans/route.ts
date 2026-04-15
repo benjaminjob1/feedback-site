@@ -202,7 +202,7 @@ Only include issues that are actually mentioned in the feedback. Be specific and
   }
 }
 
-// PATCH - Update action plan (status, priority)
+// PATCH - Update action plan (status, priority, comments)
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get("fb_session")?.value;
   if (!token) return NextResponse.json({ error: "Login required" }, { status: 401 });
@@ -221,12 +221,13 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  const { id, status, priority } = await req.json();
+  const { id, status, priority, comments } = await req.json();
   if (!id) return NextResponse.json({ error: "Plan ID required" }, { status: 400 });
 
   const updates: any = { updated_at: new Date().toISOString() };
-  if (status) updates.status = status;
-  if (priority) updates.priority = priority;
+  if (status !== undefined) updates.status = status;
+  if (priority !== undefined) updates.priority = priority;
+  if (comments !== undefined) updates.comments = comments;
 
   const { data, error } = await supabaseAdmin
     .from("action_plans")
