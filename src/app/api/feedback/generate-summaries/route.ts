@@ -90,11 +90,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
   }
 
-  // Get all feedback without summaries
-  const { data: feedbackWithoutSummaries, error } = await supabaseAdmin
+  // Clear ALL existing cached summaries first (so "regenerate all" actually regenerates)
+  await supabaseAdmin
     .from("feedback")
-    .select("id, site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, ai_questions")
-    .is("cached_ai_summary", null);
+    .update({ cached_ai_summary: null })
+    .not("cached_ai_summary", "is", null);
+
+  // Get all feedback (now all will have null summaries)
+  const { data: allFeedback, error } = await supabaseAdmin
+    .from("feedback")
+    .select("id, site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, ai_questions");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -102,7 +107,7 @@ export async function POST(req: NextRequest) {
   let failed = 0;
   
   // Generate summaries for each
-  for (const fb of feedbackWithoutSummaries || []) {
+  for (const fb of allFeedback || []) {
     const summary = await generateFeedbackSummary(fb, apiKey);
     const fbId = fb.id as string;
     if (summary) {
@@ -119,5 +124,5 @@ export async function POST(req: NextRequest) {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  return NextResponse.json({ success: true, generated, failed, total: feedbackWithoutSummaries?.length || 0 });
+  return NextResponse.json({ success: true, generated, failed, total: allFeedback?.length || 0 });
 }
