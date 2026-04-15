@@ -218,7 +218,7 @@ function ActionPlanCard({ plan, onDelete, onUpdate, selected, onToggle }: { plan
                 </div>
               )}
               <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
-                Edit Status/Priority
+                Edit Plan
               </Button>
               {feedbackIds.length > 0 && (
                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>

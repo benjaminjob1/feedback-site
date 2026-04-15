@@ -409,7 +409,7 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
               )}
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
-                  Edit Status/Priority
+                  Edit Plan
                 </Button>
                 {feedbackIds.length > 0 && (
                   <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>
