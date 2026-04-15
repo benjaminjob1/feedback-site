@@ -181,31 +181,36 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
           {/* AI Follow-up Questions & Answers */}
           {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
             let qa: any[] = [];
+            // Parse ai_questions JSON string
             if (fb.ai_questions) {
               try { qa = JSON.parse(fb.ai_questions); } catch {}
             }
+            // Check question_other fallback
             if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
               const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
               const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
               try { qa = JSON.parse(aiText); } catch {}
             }
-            if (!Array.isArray(qa) || qa.length === 0) return <p className="text-xs text-muted-foreground border-t border-border pt-2">No AI follow-ups</p>;
+            // Debug: if still no qa, show what's available
+            if (!Array.isArray(qa) || qa.length === 0) {
+              return <p className="text-xs text-muted-foreground border-t border-border pt-2">AI follow-ups present ({fb.ai_questions?.length} chars)</p>;
+            }
             return (
               <div className="border-t border-border pt-3 space-y-3">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">AI Follow-up Answers</p>
                 {qa.map((item, i) => {
-                  const question = item.question || Object.keys(item)[0];
-                  const answer = item.answer || item[question] || "";
+                  const question = item.question || (typeof item === 'object' ? Object.keys(item)[0] : String(i));
+                  const answer = item.answer || (typeof item === 'object' ? item[question] : '');
                   return (
                     <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
-                      <p className="text-xs font-medium text-foreground">{question || String(i)}</p>
+                      <p className="text-xs font-medium text-foreground">{question}</p>
                       <p className="text-sm text-muted-foreground">{answer}</p>
                     </div>
                   );
                 })}
               </div>
             );
-          })() : <p className="text-xs text-muted-foreground border-t border-border pt-2">No AI follow-ups</p>}
+          })() : null}
         </CardContent>
       )}
     </Card>
