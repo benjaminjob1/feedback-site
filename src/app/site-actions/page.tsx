@@ -5,7 +5,7 @@ import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle, List, Square, CheckSquare } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
 
 type Feedback = {
   id: string;
@@ -36,6 +36,7 @@ type ActionPlan = {
   feedback_ids?: string;
   priority: string;
   status: string;
+  comments?: string;
   created_at: string;
 };
 
@@ -105,50 +106,50 @@ function FeedbackCard({ fb, selected, onToggle }: { fb: Feedback; selected: bool
 
   return (
     <Card className={`bg-card/80 overflow-hidden transition-colors ${selected ? "border-primary border-2" : ""}`}>
-      <button 
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left"
-      >
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-3">
-            {/* Checkbox + Left side */}
-            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle();
-                }}
-                className={`flex-shrink-0 p-1 rounded ${selected ? "text-primary" : "text-muted-foreground"}`}
-              >
-                {selected ? <CheckSquare size={18} /> : <Square size={18} />}
-              </button>
-              <span className="text-xl">{siteEmoji(fb.site)}</span>
-              <div className="min-w-0">
-                <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
-                <p className="text-xs text-muted-foreground truncate">
-                  {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                </p>
+      <div className="flex items-start">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          className={`p-2 flex-shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}
+        >
+          {selected ? <CheckCircle size={20} /> : <Circle size={20} />}
+        </button>
+        <div className="flex-1">
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            className="w-full text-left"
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+                  <span className="text-xl">{siteEmoji(fb.site)}</span>
+                  <div className="min-w-0">
+                    <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {renderStars(fb.rating)}
+                  <FeedbackHeatmap fb={fb} />
+                  {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {renderStars(fb.rating)}
-              <FeedbackHeatmap fb={fb} />
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-2">
-            {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-              <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
-              </p>
-            )}
-            {renderStatusBadge()}
-          </div>
-        </CardHeader>
-      </button>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
+                  <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
+                  </p>
+                )}
+                {renderStatusBadge()}
+              </div>
+            </CardHeader>
+          </button>
+        </div>
+      </div>
 
       {expanded && (
         <CardContent className="space-y-3 text-sm border-t border-border pt-3">
@@ -255,6 +256,14 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
     high: "bg-red-500/10 border-red-500 text-red-500",
     medium: "bg-yellow-500/10 border-yellow-500 text-yellow-500",
     low: "bg-green-500/10 border-green-500 text-green-500",
+    critical: "bg-purple-500/10 border-purple-500 text-purple-500",
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-gray-500/10 border-gray-500 text-gray-500",
+    in_progress: "bg-blue-500/10 border-blue-500 text-blue-500",
+    completed: "bg-green-500/10 border-green-500 text-green-500",
+    dismissed: "bg-gray-400/10 border-gray-400 text-gray-400",
   };
 
   const statusIcons: Record<string, JSX.Element> = {
@@ -303,7 +312,7 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
               <Badge className={priorityColors[plan.priority] || priorityColors.medium}>
                 {plan.priority}
               </Badge>
-              <Badge variant="outline" className="text-xs">
+              <Badge className={statusColors[plan.status] || statusColors.pending}>
                 {statusIcons[plan.status]}
                 {plan.status.replace("_", " ")}
               </Badge>
@@ -344,7 +353,6 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
             </ul>
           </div>
 
-          {/* Edit Form */}
           {editing ? (
             <div className="border-t border-border pt-4 space-y-3">
               <div className="flex gap-4">
@@ -400,37 +408,33 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-                >
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
                   Edit Status/Priority
                 </Button>
-              {feedbackIds.length > 0 && (
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>
-                  View Feedback ({feedbackIds.length})
+                {feedbackIds.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>
+                    View Feedback ({feedbackIds.length})
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Delete this action plan?")) {
+                      onDelete(plan.id);
+                    }
+                  }}
+                  className="flex items-center gap-1"
+                >
+                  <Trash2 size={12} /> Delete
                 </Button>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm("Delete this action plan?")) {
-                    onDelete(plan.id);
-                  }
-                }}
-                className="flex items-center gap-1"
-              >
-                <Trash2 size={12} /> Delete
-              </Button>
+              </div>
             </div>
           )}
         </CardContent>
       )}
 
-      {/* Feedback Popup Modal */}
       {showFeedback && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
           <Card className="max-w-lg w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
@@ -509,7 +513,6 @@ export default function SiteActions() {
       .then(data => {
         const feedback = data.feedback || [];
         setSiteFeedback(feedback);
-        // Select all by default
         setSelectedFeedback(new Set(feedback.map((fb: Feedback) => fb.id)));
         setLoading(false);
       })
@@ -647,7 +650,7 @@ export default function SiteActions() {
         </div>
         <a href="/all-plans">
           <Button variant="outline" className="flex items-center gap-2">
-            <List size={14} /> All Action Plans
+            All Action Plans
           </Button>
         </a>
       </div>
