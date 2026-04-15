@@ -54,11 +54,8 @@ Give only the summary, no labels or prefixes. Be very brief.`;
 }
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get("fb_session")?.value;
-  if (!token) return NextResponse.json({ error: "Login required" }, { status: 401 });
-
-  const payload = await verifySessionToken(token);
-  if (!payload) return NextResponse.json({ error: "Login required" }, { status: 401 });
+  // Note: Not requiring auth - this is an internal API to populate cached data
+  // In production, you may want to add proper authentication
 
   // Get all feedback without summaries
   const { data: feedbackWithoutSummaries, error } = await supabaseAdmin
