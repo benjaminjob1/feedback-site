@@ -187,6 +187,7 @@ Only include issues that are actually mentioned in the feedback. Be specific and
         action_items: JSON.stringify(analysis.actionItems),
         priority: analysis.priority || "medium",
         status: "pending",
+        feedback_ids: JSON.stringify(feedback.map(fb => fb.id)),
         created_by: profile.id,
       })
       .select()

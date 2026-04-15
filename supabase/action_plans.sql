@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS action_plans (
   action_items TEXT NOT NULL, -- JSON array of action items
   priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'dismissed')),
+  feedback_ids TEXT, -- JSON array of feedback IDs used to create this plan
   created_by TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

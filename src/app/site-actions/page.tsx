@@ -33,6 +33,7 @@ type ActionPlan = {
   summary: string;
   issues: string;
   action_items: string;
+  feedback_ids?: string;
   priority: string;
   status: string;
   created_at: string;
@@ -238,11 +239,16 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState(plan.status);
   const [editPriority, setEditPriority] = useState(plan.priority);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackItems, setFeedbackItems] = useState<any[]>([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
   
   let issues: string[] = [];
   let actionItems: string[] = [];
+  let feedbackIds: string[] = [];
   try { issues = JSON.parse(plan.issues); } catch {}
   try { actionItems = JSON.parse(plan.action_items); } catch {}
+  try { feedbackIds = JSON.parse(plan.feedback_ids || "[]"); } catch {}
 
   const priorityColors: Record<string, string> = {
     high: "bg-red-500/10 border-red-500 text-red-500",
@@ -260,6 +266,22 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
   const handleSave = () => {
     onUpdate(plan.id, editStatus, editPriority);
     setEditing(false);
+  };
+
+  const handleShowFeedback = () => {
+    if (feedbackItems.length > 0) {
+      setShowFeedback(true);
+      return;
+    }
+    setLoadingFeedback(true);
+    fetch(`/api/site-actions/plans/feedback?ids=${feedbackIds.join(",")}`)
+      .then(res => res.json())
+      .then(data => {
+        setFeedbackItems(data.feedback || []);
+        setShowFeedback(true);
+        setLoadingFeedback(false);
+      })
+      .catch(() => setLoadingFeedback(false));
   };
 
   return (
@@ -360,7 +382,7 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
               </div>
             </div>
           ) : (
-            <div className="pt-2 border-t border-border flex gap-2">
+            <div className="pt-2 border-t border-border flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -368,6 +390,11 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
               >
                 Edit Status/Priority
               </Button>
+              {feedbackIds.length > 0 && (
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleShowFeedback(); }}>
+                  View Feedback ({feedbackIds.length})
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 size="sm"
@@ -384,6 +411,46 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
             </div>
           )}
         </CardContent>
+      )}
+
+      {/* Feedback Popup Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
+          <Card className="max-w-lg w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Feedback Used ({feedbackItems.length})</CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => setShowFeedback(false)}>✕</Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loadingFeedback ? (
+                <p className="text-center text-muted-foreground py-4">Loading...</p>
+              ) : feedbackItems.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No feedback found</p>
+              ) : (
+                feedbackItems.map(fb => (
+                  <div key={fb.id} className="bg-muted/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{siteEmoji(fb.site)}</span>
+                        <span className="font-medium text-sm">{fb.profiles?.full_name || fb.profiles?.email || "Anonymous"}</span>
+                      </div>
+                      <span className="text-yellow-400">{"★".repeat(fb.rating)}{"☆".repeat(5 - fb.rating)}</span>
+                    </div>
+                    {fb.cached_ai_summary && (
+                      <p className="text-xs text-muted-foreground italic mb-1">💡 {fb.cached_ai_summary}</p>
+                    )}
+                    {fb.question_other && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">&ldquo;{fb.question_other}&rdquo;</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </Card>
   );
