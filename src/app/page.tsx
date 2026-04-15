@@ -98,9 +98,11 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 <p className="text-xs text-muted-foreground">
                   {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </p>
-                {fb.cached_ai_summary && (
+                {fb.cached_ai_summary ? (
                   <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 {fb.cached_ai_summary}</p>
-                )}
+                ) : fb.ai_questions ? (
+                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 Generating summary...</p>
+                ) : null}
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -266,11 +268,6 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">
             {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
           </p>
-          {allFeedback.length > 0 && (
-            <p className="text-xs text-green-500 mt-1 font-mono">
-              ✓ {allFeedback.filter((fb: any) => fb.ai_questions).length} AI Q&A loaded
-            </p>
-          )}
         </div>
         <div className="flex gap-2">
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
