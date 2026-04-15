@@ -489,7 +489,7 @@ export default function SiteActions() {
             {actionPlans.length === 0 ? (
               <Card className="bg-muted/20">
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  No action plans yet. Click "Analyze & Create Plan" to generate one from feedback.
+                  No action plans yet. Click &ldquo;Analyze & Create Plan&rdquo; to generate one from feedback.
                 </CardContent>
               </Card>
             ) : (
