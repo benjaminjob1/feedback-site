@@ -191,10 +191,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
               try { qa = JSON.parse(aiText); } catch {}
             }
-            // Debug: if still no qa, show what's available
-            if (!Array.isArray(qa) || qa.length === 0) {
-              return <p className="text-xs text-muted-foreground border-t border-border pt-2">AI follow-ups present ({fb.ai_questions?.length} chars)</p>;
-            }
+            if (!Array.isArray(qa) || qa.length === 0) return null;
             return (
               <div className="border-t border-border pt-3 space-y-3">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">AI Follow-up Answers</p>
@@ -240,28 +237,13 @@ export default function Home() {
       .then(res => res.json())
       .then(async (data) => {
         const feedbackList = data.feedback || [];
-        // Debug: count items with AI questions
-        const withAI = feedbackList.filter((fb: any) => fb.ai_questions).length;
-        const withSummary = feedbackList.filter((fb: any) => fb.cached_ai_summary).length;
-        
         setAllFeedback(feedbackList);
         setLoading(false);
         
-        // Store debug info for UI display
-        (window as any).__feedbackDebug = { total: feedbackList.length, withAI, withSummary };
-        
-        // Check how many need summaries
+        // Trigger background generation for feedback without summaries
         const needSummaries = feedbackList.filter((fb: any) => !fb.cached_ai_summary).length;
         if (needSummaries > 0) {
-          // Trigger background generation for feedback without summaries
-          fetch("/api/feedback/generate-summaries", { method: "POST" })
-            .then(res => res.json())
-            .then(result => {
-              (window as any).__feedbackDebug = { ...(window as any).__feedbackDebug, generated: result.generated };
-              // Force re-render to show updated counts
-              setAllFeedback([...feedbackList]);
-            })
-            .catch(() => {});
+          fetch("/api/feedback/generate-summaries", { method: "POST" });
         }
       });
   };
@@ -278,13 +260,6 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">
             {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
           </p>
-          {/* Debug info - shows counts */}
-          {allFeedback.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {allFeedback.filter((fb: any) => fb.ai_questions).length} with AI Q&A, {
-                allFeedback.filter((fb: any) => fb.cached_ai_summary).length} with summaries
-            </p>
-          )}
         </div>
         <div className="flex gap-2">
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
