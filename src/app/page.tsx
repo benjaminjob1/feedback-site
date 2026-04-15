@@ -101,13 +101,16 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
       >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-3">
-            {/* Left - icon + name + user */}
+            {/* Left - icon + name + user + date */}
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <span className="text-xl">{siteEmoji(fb.site)}</span>
               <div className="min-w-0">
                 <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
                 <p className="text-xs text-muted-foreground truncate">
                   {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </p>
               </div>
             </div>
@@ -120,18 +123,13 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             </div>
           </div>
 
-          {/* AI summary + date + status row */}
+          {/* AI summary row */}
           <div className="mt-1 flex items-center justify-between gap-2">
-            <div>
-              {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-                <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+            {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
+              <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
               </p>
-            </div>
+            )}
             {renderStatusBadge()}
           </div>
         </CardHeader>
