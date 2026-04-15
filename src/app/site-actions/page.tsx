@@ -463,11 +463,10 @@ export default function SiteActions() {
     setSelectedFeedback(new Set());
   };
 
-  const handleAnalyze = (selectedOnly: boolean = true) => {
+  const handleAnalyze = () => {
     if (!selectedSite) return;
     
-    const feedbackIds = selectedOnly ? Array.from(selectedFeedback) : [];
-    const feedbackCount = selectedOnly ? selectedFeedback.size : siteFeedback.length;
+    const feedbackCount = selectedFeedback.size;
     
     if (feedbackCount === 0) {
       alert("No feedback selected");
@@ -475,13 +474,13 @@ export default function SiteActions() {
     }
 
     const siteName = SITES.find(s => s.value === selectedSite)?.label;
-    if (!confirm(`Analyze ${feedbackCount} feedback item${feedbackCount !== 1 ? "s" : ""} for ${siteName}${selectedOnly ? " (selected only)" : ""} and generate an action plan?`)) return;
+    if (!confirm(`Analyze ${feedbackCount} feedback item${feedbackCount !== 1 ? "s" : ""} for ${siteName} and generate an action plan?`)) return;
 
     setAnalyzing(true);
     fetch("/api/site-actions/plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ site: selectedSite, feedbackIds }),
+      body: JSON.stringify({ site: selectedSite, feedbackIds: Array.from(selectedFeedback) }),
     })
       .then(res => res.json())
       .then(data => {
@@ -594,7 +593,7 @@ export default function SiteActions() {
                 <span className="text-muted-foreground">({actionPlans.length})</span>
               </div>
               <Button
-                onClick={() => handleAnalyze(true)}
+                onClick={handleAnalyze}
                 disabled={analyzing || selectedFeedback.size === 0}
                 className="flex items-center gap-2"
               >
@@ -640,14 +639,6 @@ export default function SiteActions() {
                 </Button>
                 <Button size="sm" variant="outline" onClick={deselectAll}>
                   Deselect All
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleAnalyze(false)}
-                  disabled={analyzing || siteFeedback.length === 0}
-                >
-                  Analyze All ({siteFeedback.length})
                 </Button>
               </div>
             </div>
