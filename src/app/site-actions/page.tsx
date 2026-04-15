@@ -408,6 +408,16 @@ export default function SiteActions() {
       });
   }, []);
 
+  // Auto-select site from URL query param on load
+  useEffect(() => {
+    if (checking) return;
+    const params = new URLSearchParams(window.location.search);
+    const siteParam = params.get("site");
+    if (siteParam && SITES.find(s => s.value === siteParam)) {
+      handleSiteSelect(siteParam);
+    }
+  }, [checking]);
+
   const fetchSiteFeedback = (site: string) => {
     setLoading(true);
     fetch(`/api/feedback?site=${site}`)
