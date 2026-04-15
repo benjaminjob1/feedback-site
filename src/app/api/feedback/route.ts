@@ -199,12 +199,13 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Generate AI summary in background (async, don't wait)
+  const newFeedbackId = data?.id;
   generateFeedbackSummary({ site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other }).then(async (summary) => {
-    if (summary && data) {
+    if (summary && newFeedbackId) {
       await supabaseAdmin
         .from("feedback")
         .update({ cached_ai_summary: summary })
-        .eq("id", data.id);
+        .eq("id", newFeedbackId as string);
     }
   }).catch(() => {});
 
