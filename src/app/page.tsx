@@ -179,32 +179,29 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
           </Badge>
 
           {/* AI Follow-up Questions & Answers */}
-          {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
-            let qa: any[] = [];
-            // Parse ai_questions JSON string
-            if (fb.ai_questions) {
-              try { qa = JSON.parse(fb.ai_questions); } catch {}
-            }
-            // Check question_other fallback
-            if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
-              const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-              const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-              try { qa = JSON.parse(aiText); } catch {}
-            }
-            if (!Array.isArray(qa) || qa.length === 0) return null;
+          {fb.ai_questions ? (() => {
+            let qaArray: {question: string; answer: string}[] = [];
+            try {
+              const parsed = JSON.parse(fb.ai_questions!);
+              // ai_questions is stored as {"question": "answer"} not [{"question":"...","answer":"..."}]
+              if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+                Object.entries(parsed).forEach(([q, a]) => {
+                  qaArray.push({ question: q, answer: String(a) });
+                });
+              } else if (Array.isArray(parsed)) {
+                qaArray = parsed;
+              }
+            } catch {}
+            if (qaArray.length === 0) return null;
             return (
               <div className="border-t border-border pt-3 space-y-3">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">AI Follow-up Answers</p>
-                {qa.map((item, i) => {
-                  const question = item.question || (typeof item === 'object' ? Object.keys(item)[0] : String(i));
-                  const answer = item.answer || (typeof item === 'object' ? item[question] : '');
-                  return (
-                    <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
-                      <p className="text-xs font-medium text-foreground">{question}</p>
-                      <p className="text-sm text-muted-foreground">{answer}</p>
-                    </div>
-                  );
-                })}
+                {qaArray.map((item, i) => (
+                  <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
+                    <p className="text-xs font-medium text-foreground">{item.question}</p>
+                    <p className="text-sm text-muted-foreground">{item.answer}</p>
+                  </div>
+                ))}
               </div>
             );
           })() : null}
@@ -260,6 +257,11 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">
             {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
           </p>
+          {allFeedback.length > 0 && (
+            <p className="text-xs text-green-500 mt-1 font-mono">
+              ✓ {allFeedback.filter((fb: any) => fb.ai_questions).length} AI Q&A loaded
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
