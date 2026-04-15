@@ -706,9 +706,11 @@ export default function AdminPage() {
                                     <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
                                       Make Admin
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
-                                      Remove
-                                    </Button>
+                                    {!isBen && (
+                                      <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                        Remove
+                                      </Button>
+                                    )}
                                   </>
                                 ) : null}
                                 {u.role === "viewer" ? (
@@ -719,6 +721,11 @@ export default function AdminPage() {
                                     <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "admin")}>
                                       Make Admin
                                     </Button>
+                                    {!isBen && (
+                                      <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                        Remove
+                                      </Button>
+                                    )}
                                   </>
                                 ) : null}
                                 {u.role === "admin" ? (
@@ -729,9 +736,11 @@ export default function AdminPage() {
                                     <Button size="sm" variant="outline" onClick={() => updateUserRole(u.email, "user")}>
                                       Make User
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
-                                      Remove
-                                    </Button>
+                                    {!isBen && (
+                                      <Button size="sm" variant="destructive" onClick={() => deleteUser(u.email)}>
+                                        Remove
+                                      </Button>
+                                    )}
                                   </>
                                 ) : null}
                               </div>
