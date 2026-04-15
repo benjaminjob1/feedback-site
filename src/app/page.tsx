@@ -240,18 +240,28 @@ export default function Home() {
       .then(res => res.json())
       .then(async (data) => {
         const feedbackList = data.feedback || [];
+        // Debug: count items with AI questions
+        const withAI = feedbackList.filter((fb: any) => fb.ai_questions).length;
+        const withSummary = feedbackList.filter((fb: any) => fb.cached_ai_summary).length;
+        
         setAllFeedback(feedbackList);
         setLoading(false);
+        
+        // Store debug info for UI display
+        (window as any).__feedbackDebug = { total: feedbackList.length, withAI, withSummary };
         
         // Check how many need summaries
         const needSummaries = feedbackList.filter((fb: any) => !fb.cached_ai_summary).length;
         if (needSummaries > 0) {
-          console.log(`[Feedback] ${needSummaries} items need AI summaries, triggering generation...`);
           // Trigger background generation for feedback without summaries
           fetch("/api/feedback/generate-summaries", { method: "POST" })
             .then(res => res.json())
-            .then(result => console.log("[Feedback] Summary generation result:", result))
-            .catch(err => console.error("[Feedback] Summary generation error:", err));
+            .then(result => {
+              (window as any).__feedbackDebug = { ...(window as any).__feedbackDebug, generated: result.generated };
+              // Force re-render to show updated counts
+              setAllFeedback([...feedbackList]);
+            })
+            .catch(() => {});
         }
       });
   };
@@ -268,6 +278,13 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">
             {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
           </p>
+          {/* Debug info - shows counts */}
+          {allFeedback.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {allFeedback.filter((fb: any) => fb.ai_questions).length} with AI Q&A, {
+                allFeedback.filter((fb: any) => fb.cached_ai_summary).length} with summaries
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
