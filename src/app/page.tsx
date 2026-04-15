@@ -82,6 +82,16 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
     </span>
   );
 
+  const renderStatusBadge = () => (
+    <Badge
+      variant={fb.status === "approved" ? "default" : fb.status === "rejected" ? "destructive" : "secondary"}
+      className={`text-xs ${fb.status === "pending" ? "text-yellow-400 border-yellow-400/50" : ""}`}
+    >
+      {fb.status === "pending" && <Clock size={10} className="inline mr-1" />}
+      {fb.status}
+    </Badge>
+  );
+
   return (
     <Card className="bg-card/80 overflow-hidden">
       {/* Collapsed Header - Always Visible */}
@@ -110,16 +120,19 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             </div>
           </div>
 
-          {/* AI summary + date row */}
-          <div className="mt-1">
-            {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-              <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
+          {/* AI summary + date + status row */}
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <div>
+              {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
+                <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
               </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-            </p>
+            </div>
+            {renderStatusBadge()}
           </div>
         </CardHeader>
       </button>
@@ -181,15 +194,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             ) : null;
           })()}
 
-          {/* Status badge */}
-          <Badge
-            variant={fb.status === "approved" ? "default" : fb.status === "rejected" ? "destructive" : "secondary"}
-            className={fb.status === "pending" ? "text-yellow-400 border-yellow-400/50" : ""}
-          >
-            {fb.status === "pending" && <Clock size={10} className="inline mr-1" />}
-            {fb.status}
-          </Badge>
-
           {/* AI Follow-up Questions & Answers */}
           {fb.ai_questions ? (() => {
             let qaArray: {question: string; answer: string}[] = [];
@@ -217,6 +221,11 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               </div>
             );
           })() : null}
+
+          {/* Status badge at bottom */}
+          <div className="pt-2">
+            {renderStatusBadge()}
+          </div>
         </CardContent>
       )}
     </Card>
