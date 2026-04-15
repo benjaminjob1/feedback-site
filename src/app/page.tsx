@@ -90,28 +90,36 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
         className="w-full text-left"
       >
         <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xl flex-shrink-0">{siteEmoji(fb.site)}</span>
+          <div className="flex items-start justify-between gap-3">
+            {/* Left - icon + name + user */}
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+              <span className="text-xl">{siteEmoji(fb.site)}</span>
               <div className="min-w-0">
                 <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                <p className="text-xs text-muted-foreground truncate">
+                  {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"}
                 </p>
               </div>
             </div>
-            <div className="flex flex-col gap-1 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                {renderStars(fb.rating)}
-                <FeedbackHeatmap fb={fb} />
-                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </div>
-              {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-                <p className="text-[10px] text-muted-foreground italic text-left max-w-full truncate" title={fb.cached_ai_summary || "Summary unavailable"}>
-                  {fb.cached_ai_summary ? `💡 ${fb.cached_ai_summary}` : "💡 Summary unavailable"}
-                </p>
-              )}
+
+            {/* Right - rating + heatmap + expand, right-aligned */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {renderStars(fb.rating)}
+              <FeedbackHeatmap fb={fb} />
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
+          </div>
+
+          {/* Date + AI summary row */}
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">
+              {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+            </p>
+            {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
+              <p className="text-[10px] text-muted-foreground italic truncate max-w-[60%]" title={fb.cached_ai_summary || "Summary unavailable"}>
+                💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
+              </p>
+            )}
           </div>
         </CardHeader>
       </button>
@@ -293,9 +301,12 @@ export default function Home() {
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
           {isAdmin && <a href="/admin"><Button variant="outline">Admin</Button></a>}
         </div>
-        {isAdmin && (
-          <Button 
-            variant="outline" 
+      </div>
+
+      {isAdmin && (
+        <div className="mb-4">
+          <Button
+            variant="outline"
             className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
             onClick={() => {
               if (confirm("Regenerate all AI summaries? This will overwrite existing summaries.")) {
@@ -306,8 +317,8 @@ export default function Home() {
           >
             {regenerating ? "Regenerating..." : "Regenerate All Summaries"}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
