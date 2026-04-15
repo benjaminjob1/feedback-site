@@ -5,7 +5,7 @@ import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
 
 type Feedback = {
   id: string;
@@ -25,6 +25,17 @@ type Feedback = {
   submitted_by: string;
   cached_ai_summary?: string;
   profiles: { full_name: string; email: string } | null;
+};
+
+type ActionPlan = {
+  id: string;
+  site: string;
+  summary: string;
+  issues: string;
+  action_items: string;
+  priority: string;
+  status: string;
+  created_at: string;
 };
 
 function siteEmoji(site: string) {
@@ -99,7 +110,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
       >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-3">
-            {/* Left - icon + name + user + date */}
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <span className="text-xl">{siteEmoji(fb.site)}</span>
               <div className="min-w-0">
@@ -112,16 +122,12 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 </p>
               </div>
             </div>
-
-            {/* Right - rating + heatmap + expand, right-aligned */}
             <div className="flex items-center gap-2 flex-shrink-0">
               {renderStars(fb.rating)}
               <FeedbackHeatmap fb={fb} />
               {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
           </div>
-
-          {/* AI summary row */}
           <div className="mt-1 flex items-center justify-between gap-2">
             {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
               <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -133,17 +139,13 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
         </CardHeader>
       </button>
 
-      {/* Expanded Content */}
       {expanded && (
         <CardContent className="space-y-3 text-sm border-t border-border pt-3">
-          {/* AI Summary */}
           {fb.cached_ai_summary && (
             <div className="bg-muted/30 rounded-md p-2 mb-2">
               <p className="text-xs text-muted-foreground italic">💡 {fb.cached_ai_summary}</p>
             </div>
           )}
-
-          {/* Slider bars */}
           {(["question_easy", "question_improve", "question_bugs", "question_features", "question_bugs_slider"] as const).map((key) => {
             const val = (fb as any)[key];
             if (val === undefined || val === null) return null;
@@ -168,8 +170,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               </div>
             );
           })}
-
-          {/* Comments */}
           {(() => {
             const hasAI = fb.question_other?.includes("[AI Follow-ups]");
             if (hasAI) {
@@ -189,8 +189,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               </div>
             ) : null;
           })()}
-
-          {/* AI Follow-up Questions & Answers */}
           {fb.ai_questions ? (() => {
             let qaArray: {question: string; answer: string}[] = [];
             try {
@@ -216,10 +214,109 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               </div>
             );
           })() : null}
-
-          {/* Status badge at bottom */}
           <div className="pt-2">
             {renderStatusBadge()}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function ActionPlanCard({ plan, onDelete }: { plan: ActionPlan; onDelete: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  let issues: string[] = [];
+  let actionItems: string[] = [];
+  try { issues = JSON.parse(plan.issues); } catch {}
+  try { actionItems = JSON.parse(plan.action_items); } catch {}
+
+  const priorityColors: Record<string, string> = {
+    high: "bg-red-500/10 border-red-500 text-red-500",
+    medium: "bg-yellow-500/10 border-yellow-500 text-yellow-500",
+    low: "bg-green-500/10 border-green-500 text-green-500",
+  };
+
+  const statusIcons: Record<string, JSX.Element> = {
+    pending: <Clock size={12} className="mr-1" />,
+    in_progress: <Zap size={12} className="mr-1" />,
+    completed: <CheckCircle size={12} className="mr-1" />,
+    dismissed: <AlertTriangle size={12} className="mr-1" />,
+  };
+
+  return (
+    <Card className="bg-card overflow-hidden">
+      <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{siteEmoji(plan.site)}</span>
+              <div>
+                <CardTitle className="text-sm">{SITES.find(s => s.value === plan.site)?.label}</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(plan.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className={priorityColors[plan.priority] || priorityColors.medium}>
+                {plan.priority}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {statusIcons[plan.status]}
+                {plan.status.replace("_", " ")}
+              </Badge>
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <p className="text-sm mt-2">{plan.summary}</p>
+        </CardHeader>
+      </button>
+
+      {expanded && (
+        <CardContent className="space-y-4 border-t border-border pt-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 flex items-center">
+              <AlertTriangle size={12} className="mr-1" /> Issues Identified ({issues.length})
+            </p>
+            <ul className="space-y-1">
+              {issues.map((issue, i) => (
+                <li key={i} className="text-sm flex items-start gap-2">
+                  <span className="text-red-400 mt-0.5">•</span>
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 flex items-center">
+              <CheckCircle size={12} className="mr-1" /> Action Items ({actionItems.length})
+            </p>
+            <ul className="space-y-1">
+              {actionItems.map((item, i) => (
+                <li key={i} className="text-sm flex items-start gap-2">
+                  <span className="text-green-400 mt-0.5">{i + 1}.</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="pt-2 border-t border-border">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Delete this action plan?")) {
+                  onDelete(plan.id);
+                }
+              }}
+              className="flex items-center gap-1"
+            >
+              <Trash2 size={12} /> Delete Plan
+            </Button>
           </div>
         </CardContent>
       )}
@@ -231,7 +328,9 @@ export default function SiteActions() {
   const [user, setUser] = useState<any>(null);
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [siteFeedback, setSiteFeedback] = useState<Feedback[]>([]);
+  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -254,13 +353,60 @@ export default function SiteActions() {
       .catch(() => setLoading(false));
   };
 
+  const fetchActionPlans = (site: string) => {
+    fetch(`/api/site-actions/plans?site=${site}`)
+      .then(res => res.json())
+      .then(data => {
+        setActionPlans(data.plans || []);
+      })
+      .catch(() => {});
+  };
+
   const handleSiteSelect = (site: string) => {
     setSelectedSite(site);
     if (site) {
       fetchSiteFeedback(site);
+      fetchActionPlans(site);
     } else {
       setSiteFeedback([]);
+      setActionPlans([]);
     }
+  };
+
+  const handleAnalyze = () => {
+    if (!selectedSite) return;
+    if (!confirm(`Analyze all approved feedback for ${SITES.find(s => s.value === selectedSite)?.label} and generate an action plan?`)) return;
+
+    setAnalyzing(true);
+    fetch("/api/site-actions/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ site: selectedSite }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setAnalyzing(false);
+        if (data.error) {
+          alert(`Analysis failed: ${data.error}`);
+        } else {
+          fetchActionPlans(selectedSite);
+        }
+      })
+      .catch(() => {
+        setAnalyzing(false);
+        alert("Analysis failed");
+      });
+  };
+
+  const handleDeletePlan = (id: string) => {
+    fetch(`/api/site-actions/plans?id=${id}`, { method: "DELETE" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setActionPlans(prev => prev.filter(p => p.id !== id));
+        }
+      })
+      .catch(() => {});
   };
 
   const isAdmin = user?.role === "admin";
@@ -288,10 +434,10 @@ export default function SiteActions() {
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Site Actions</h1>
-        <p className="text-muted-foreground">View and manage feedback by site</p>
+        <p className="text-muted-foreground">View feedback and create AI action plans by site</p>
       </div>
 
-      {/* Site Selector - Same style as submit page */}
+      {/* Site Selector */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Select a Site</CardTitle>
@@ -316,33 +462,71 @@ export default function SiteActions() {
         </CardContent>
       </Card>
 
-      {/* Feedback List */}
       {selectedSite && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">
-              {SITES.find(s => s.value === selectedSite)?.emoji} {SITES.find(s => s.value === selectedSite)?.label} Feedback
-            </h2>
-            <span className="text-muted-foreground">{siteFeedback.length} item{siteFeedback.length !== 1 ? "s" : ""}</span>
+        <>
+          {/* Action Plans Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">Action Plans</h2>
+                <span className="text-muted-foreground">({actionPlans.length})</span>
+              </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={analyzing}
+                className="flex items-center gap-2"
+              >
+                {analyzing ? (
+                  <>Analyzing...</>
+                ) : (
+                  <>
+                    <Zap size={14} /> Analyze & Create Plan
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {actionPlans.length === 0 ? (
+              <Card className="bg-muted/20">
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No action plans yet. Click "Analyze & Create Plan" to generate one from feedback.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {actionPlans.map(plan => (
+                  <ActionPlanCard key={plan.id} plan={plan} onDelete={handleDeletePlan} />
+                ))}
+              </div>
+            )}
           </div>
 
-          {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading...</div>
-          ) : siteFeedback.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No feedback for this site yet.
+          {/* Feedback Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">
+                {SITES.find(s => s.value === selectedSite)?.emoji} {SITES.find(s => s.value === selectedSite)?.label} Feedback
+              </h2>
+              <span className="text-muted-foreground">{siteFeedback.length} item{siteFeedback.length !== 1 ? "s" : ""}</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {siteFeedback.map(fb => (
-                <FeedbackCard key={fb.id} fb={fb} />
-              ))}
-            </div>
-          )}
-        </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            ) : siteFeedback.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No feedback for this site yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {siteFeedback.map(fb => (
+                  <FeedbackCard key={fb.id} fb={fb} />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
-      {/* Back link */}
       <div className="mt-6">
         <a href="/" className="text-primary hover:underline">&larr; Back to Feedback</a>
       </div>
