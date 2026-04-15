@@ -297,6 +297,7 @@ export default function AllPlans() {
   const [selectedPlans, setSelectedPlans] = useState<Set<string>>(new Set());
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareEmails, setShareEmails] = useState("");
+  const [shareLink, setShareLink] = useState("");
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
@@ -313,6 +314,17 @@ export default function AllPlans() {
       fetchPlans();
     }
   }, [user]);
+
+  // Auto-select plans from URL query param (for shared links)
+  useEffect(() => {
+    if (checking) return;
+    const params = new URLSearchParams(window.location.search);
+    const sharedPlans = params.get("shared");
+    if (sharedPlans) {
+      const planIds = sharedPlans.split(",").filter(Boolean);
+      setSelectedPlans(new Set(planIds));
+    }
+  }, [checking, allPlans]);
 
   const fetchPlans = () => {
     setLoading(true);
@@ -385,7 +397,18 @@ export default function AllPlans() {
       alert("Please select at least one plan to share");
       return;
     }
+    const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://feedback.benjob.me";
+    const link = `${siteUrl}/all-plans?shared=${Array.from(selectedPlans).join(",")}`;
+    setShareLink(link);
     setShowShareModal(true);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareLink).then(() => {
+      alert("Link copied to clipboard!");
+    }).catch(() => {
+      alert("Failed to copy link");
+    });
   };
 
   const submitShare = () => {
@@ -549,10 +572,25 @@ export default function AllPlans() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Share {selectedPlans.size} selected plan{selectedPlans.size !== 1 ? "s" : ""} via email.
+                Share {selectedPlans.size} selected plan{selectedPlans.size !== 1 ? "s" : ""} via email or copy link.
               </p>
+              
+              {/* Copy Link */}
               <div>
-                <label className="text-sm block mb-2">Recipient emails (comma-separated):</label>
+                <label className="text-sm block mb-2">Shareable Link:</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={shareLink}
+                    readOnly
+                    className="flex-1 bg-muted border rounded px-2 py-1 text-sm"
+                  />
+                  <Button size="sm" onClick={handleCopyLink}>Copy</Button>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <label className="text-sm block mb-2">Or send via email:</label>
                 <textarea
                   value={shareEmails}
                   onChange={(e) => setShareEmails(e.target.value)}
@@ -561,10 +599,11 @@ export default function AllPlans() {
                   disabled={sharing}
                 />
               </div>
+              
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowShareModal(false)} disabled={sharing}>Cancel</Button>
-                <Button onClick={submitShare} disabled={sharing}>
-                  {sharing ? "Sending..." : "Send"}
+                <Button onClick={submitShare} disabled={sharing || !shareEmails.trim()}>
+                  {sharing ? "Sending..." : "Send Email"}
                 </Button>
               </div>
             </CardContent>

@@ -53,11 +53,16 @@ ${i + 1}. ${siteLabel} - ${plan.priority.toUpperCase()} priority
     `.trim();
   }).join("\n\n");
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://feedback.benjob.me";
+  const sharedLink = `${siteUrl}/all-plans?shared=${plans.map((p: any) => p.id).join(",")}`;
+
   const emailBody = `Action Plans Shared by ${profile.full_name || payload.email}
 
 The following action plans have been shared with you for review:
 
 ${plansList}
+
+View these plans online: ${sharedLink}
 
 ---
 Shared from Feedback Portal`;
