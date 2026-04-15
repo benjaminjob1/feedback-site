@@ -541,7 +541,7 @@ export default function AllPlans() {
                   value={shareEmails}
                   onChange={(e) => setShareEmails(e.target.value)}
                   placeholder="email@example.com, another@example.com"
-                  className="w-full border rounded p-2 text-sm h-24"
+                  className="w-full border rounded p-2 text-sm h-24 bg-background text-foreground"
                   disabled={sharing}
                 />
               </div>
