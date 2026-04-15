@@ -33,16 +33,16 @@ function siteEmoji(site: string) {
 
 function FeedbackHeatmap({ fb }: { fb: Feedback }) {
   const sliders = [
-    { key: "question_easy", label: "Easy" },
-    { key: "question_improve", label: "Design" },
-    { key: "question_bugs", label: "Speed" },
-    { key: "question_features", label: "Features" },
-    { key: "question_bugs_slider", label: "No bugs" },
+    { key: "question_easy", label: "Easy", icon: "👆" },
+    { key: "question_improve", label: "Design", icon: "🎨" },
+    { key: "question_bugs", label: "Speed", icon: "⚡" },
+    { key: "question_features", label: "Features", icon: "✨" },
+    { key: "question_bugs_slider", label: "No bugs", icon: "🐛" },
   ];
 
   return (
     <div className="flex gap-1 items-end">
-      {sliders.map(({ key, label }) => {
+      {sliders.map(({ key, label, icon }) => {
         const val = (fb as any)[key];
         if (val === undefined || val === null) return null;
         const pct = (Number(val) / 10) * 100;
@@ -50,6 +50,7 @@ function FeedbackHeatmap({ fb }: { fb: Feedback }) {
         const hue = (pct / 100) * 120; // 0 = red, 120 = green
         return (
           <div key={key} className="flex flex-col items-center gap-0.5" title={`${label}: ${val}/10`}>
+            <span className="text-xs" title={label}>{icon}</span>
             <div 
               className="w-4 rounded-t"
               style={{ 
@@ -173,6 +174,35 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             {fb.status === "pending" && <Clock size={10} className="inline mr-1" />}
             {fb.status}
           </Badge>
+
+          {/* AI Follow-up Questions & Answers */}
+          {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
+            let qa: any[] = [];
+            if (fb.ai_questions) {
+              try { qa = JSON.parse(fb.ai_questions); } catch {}
+            }
+            if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
+              const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
+              const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
+              try { qa = JSON.parse(aiText); } catch {}
+            }
+            if (!Array.isArray(qa) || qa.length === 0) return null;
+            return (
+              <div className="border-t border-border pt-3 space-y-3">
+                <p className="text-muted-foreground text-xs uppercase tracking-wide">AI Follow-up Answers</p>
+                {qa.map((item, i) => {
+                  const question = item.question || Object.keys(item)[0];
+                  const answer = item.answer || item[question] || "";
+                  return (
+                    <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
+                      <p className="text-xs font-medium text-foreground">{question || String(i)}</p>
+                      <p className="text-sm text-muted-foreground">{answer}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })() : null}
         </CardContent>
       )}
     </Card>

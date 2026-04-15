@@ -73,11 +73,12 @@ export async function POST(req: NextRequest) {
   // Generate summaries for each
   for (const fb of feedbackWithoutSummaries || []) {
     const summary = await generateFeedbackSummary(fb);
+    const fbId = fb.id as string;
     if (summary) {
       await supabaseAdmin
         .from("feedback")
         .update({ cached_ai_summary: summary })
-        .eq("id", fb.id);
+        .eq("id", fbId);
       generated++;
     }
     
