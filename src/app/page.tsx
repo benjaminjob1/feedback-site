@@ -90,17 +90,20 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
         className="w-full text-left"
       >
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">{siteEmoji(fb.site)}</span>
-              <div>
-                <CardTitle className="text-sm">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xl flex-shrink-0">{siteEmoji(fb.site)}</span>
+              <div className="min-w-0">
+                <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
                 <p className="text-xs text-muted-foreground">
                   {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </p>
+                {fb.cached_ai_summary && (
+                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 {fb.cached_ai_summary}</p>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {renderStars(fb.rating)}
               <FeedbackHeatmap fb={fb} />
               {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
