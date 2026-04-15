@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { SITES, SiteValue } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,7 @@ function FeedbackHeatmap({ fb }: { fb: Feedback }) {
         const val = (fb as any)[key];
         if (val === undefined || val === null) return null;
         const pct = (Number(val) / 10) * 100;
-        // Heatmap colors: red (low) -> yellow -> green (high)
-        const hue = (pct / 100) * 120; // 0 = red, 120 = green
+        const hue = (pct / 100) * 120;
         return (
           <div key={key} className="flex flex-col items-center gap-0.5" title={`${label}: ${val}/10`}>
             <span className="text-xs" title={label}>{icon}</span>
@@ -94,7 +93,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
 
   return (
     <Card className="bg-card/80 overflow-hidden">
-      {/* Collapsed Header - Always Visible */}
       <button 
         onClick={() => setExpanded(!expanded)}
         className="w-full text-left"
@@ -146,7 +144,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
           )}
 
           {/* Slider bars */}
-          {["question_easy", "question_improve", "question_bugs", "question_features", "question_bugs_slider"].map((key) => {
+          {(["question_easy", "question_improve", "question_bugs", "question_features", "question_bugs_slider"] as const).map((key) => {
             const val = (fb as any)[key];
             if (val === undefined || val === null) return null;
             const labels: Record<string, string> = {
@@ -197,7 +195,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             let qaArray: {question: string; answer: string}[] = [];
             try {
               const parsed = JSON.parse(fb.ai_questions!);
-              // ai_questions is stored as {"question": "answer"} not [{"question":"...","answer":"..."}]
               if (typeof parsed === 'object' && !Array.isArray(parsed)) {
                 Object.entries(parsed).forEach(([q, a]) => {
                   qaArray.push({ question: q, answer: String(a) });
@@ -230,126 +227,125 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
   );
 }
 
-export default function Home() {
+export default function SiteActions() {
   const [user, setUser] = useState<any>(null);
-  const [allFeedback, setAllFeedback] = useState<Feedback[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<string>("");
+  const [siteFeedback, setSiteFeedback] = useState<Feedback[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then(res => res.json())
       .then(data => {
         setUser(data.user || null);
-        if (data.user) {
-          fetchFeedback(data.user);
-        } else {
-          setLoading(false);
-        }
+        setChecking(false);
       });
   }, []);
 
-  const fetchFeedback = (profile: any) => {
-    fetch("/api/feedback")
+  const fetchSiteFeedback = (site: string) => {
+    setLoading(true);
+    fetch(`/api/feedback?site=${site}`)
       .then(res => res.json())
-      .then(async (data) => {
-        const feedbackList = data.feedback || [];
-        setAllFeedback(feedbackList);
+      .then(data => {
+        setSiteFeedback(data.feedback || []);
         setLoading(false);
-        
-        // Trigger background generation for feedback without summaries
-        const needSummaries = feedbackList.filter((fb: any) => !fb.cached_ai_summary).length;
-        if (needSummaries > 0) {
-          // Call generate API
-          fetch("/api/feedback/generate-summaries", { method: "POST" })
-            .then(res => res.json())
-            .then(result => {
-              // Refresh feedback after generation
-              fetch("/api/feedback")
-                .then(res => res.json())
-                .then(data => setAllFeedback(data.feedback || []));
-            })
-            .catch(() => {});
-        }
-      });
-  };
-
-  const regenerateAllSummaries = () => {
-    setRegenerating(true);
-    fetch("/api/feedback/generate-summaries", { method: "POST" })
-      .then(res => res.json())
-      .then(result => {
-        // Refresh feedback to show new summaries
-        fetch("/api/feedback")
-          .then(res => res.json())
-          .then(data => {
-            setAllFeedback(data.feedback || []);
-            setRegenerating(false);
-          });
       })
-      .catch(() => setRegenerating(false));
+      .catch(() => setLoading(false));
   };
 
-  const canSeeFeedback = user?.role === "admin" || user?.role === "viewer";
-  const isAdmin = user?.role === "admin";
-  const isViewer = user?.role === "viewer";
+  const handleSiteSelect = (site: string) => {
+    setSelectedSite(site);
+    if (site) {
+      fetchSiteFeedback(site);
+    } else {
+      setSiteFeedback([]);
+    }
+  };
 
+  const isAdmin = user?.role === "admin";
+
+  if (checking) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Admin access required.</p>
+          <a href="/login" className="text-primary hover:underline mt-2 inline-block">Sign in</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Feedback</h1>
-          <p className="text-muted-foreground mt-1">
-            {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
-          {isAdmin && (
-            <>
-              <a href="/site-actions"><Button variant="outline">Site Actions</Button></a>
-              <a href="/admin"><Button variant="outline">Admin</Button></a>
-            </>
-          )}
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Site Actions</h1>
+        <p className="text-muted-foreground">View and manage feedback by site</p>
       </div>
 
-      {isAdmin && (
-        <div className="mb-4">
-          <Button
-            variant="outline"
-            className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
-            onClick={() => {
-              if (confirm("Regenerate all AI summaries? This will overwrite existing summaries.")) {
-                regenerateAllSummaries();
-              }
-            }}
-            disabled={regenerating}
-          >
-            {regenerating ? "Regenerating..." : "Regenerate All Summaries"}
-          </Button>
+      {/* Site Selector - Same style as submit page */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">Select a Site</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {SITES.map((site) => (
+              <button
+                key={site.value}
+                onClick={() => handleSiteSelect(site.value)}
+                className={`p-4 rounded-lg border-2 transition-colors text-left ${
+                  selectedSite === site.value
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <span className="text-2xl mb-2 block">{site.emoji}</span>
+                <span className="font-medium">{site.label}</span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Feedback List */}
+      {selectedSite && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">
+              {SITES.find(s => s.value === selectedSite)?.emoji} {SITES.find(s => s.value === selectedSite)?.label} Feedback
+            </h2>
+            <span className="text-muted-foreground">{siteFeedback.length} item{siteFeedback.length !== 1 ? "s" : ""}</span>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          ) : siteFeedback.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No feedback for this site yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {siteFeedback.map(fb => (
+                <FeedbackCard key={fb.id} fb={fb} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading...</div>
-      ) : !user ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Please log in to view feedback.</p>
-          <a href="/login" className="text-primary hover:underline mt-2 inline-block">Sign in</a>
-        </div>
-      ) : allFeedback.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {isViewer ? "No approved feedback yet." : isAdmin ? "No feedback yet." : "No feedback yet."}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {allFeedback.map(fb => (
-            <FeedbackCard key={fb.id} fb={fb} />
-          ))}
-        </div>
-      )}
+      {/* Back link */}
+      <div className="mt-6">
+        <a href="/" className="text-primary hover:underline">&larr; Back to Feedback</a>
+      </div>
     </div>
   );
 }

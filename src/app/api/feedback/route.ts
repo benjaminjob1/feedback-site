@@ -74,12 +74,18 @@ export async function GET(req: NextRequest) {
 
   if (!userId) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
+  // Check for site filter
+  const siteFilter = req.nextUrl.searchParams.get("site");
 
   let query = supabaseAdmin
     .from("feedback")
     .select("*, profiles(full_name, email)")
     .order("created_at", { ascending: false });
 
+  // Apply site filter if provided
+  if (siteFilter) {
+    query = query.eq("site", siteFilter);
+  }
 
   if (role === "admin") {
     // Admins see everything
