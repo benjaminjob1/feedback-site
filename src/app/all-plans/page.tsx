@@ -5,7 +5,7 @@ import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle, Square, CheckSquare } from "lucide-react";
 import Link from "next/link";
 
 type ActionPlan = {
@@ -24,7 +24,7 @@ function siteEmoji(site: string) {
   return SITES.find(s => s.value === site)?.emoji || "📝";
 }
 
-function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDelete: (id: string) => void; onUpdate: (id: string, status: string, priority: string) => void }) {
+function ActionPlanCard({ plan, onDelete, onUpdate, selected, onToggle }: { plan: ActionPlan; onDelete: (id: string) => void; onUpdate: (id: string, status: string, priority: string) => void; selected?: boolean; onToggle?: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState(plan.status);
@@ -83,8 +83,18 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
   };
 
   return (
-    <Card className="bg-card overflow-hidden">
-      <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
+    <Card className={`bg-card overflow-hidden ${selected ? "border-primary border-2" : ""}`}>
+      <div className="flex items-start">
+        {onToggle && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            className={`p-2 flex-shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}
+          >
+            {selected ? <CheckSquare size={20} /> : <Square size={20} />}
+          </button>
+        )}
+        <div className="flex-1">
+          <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -255,6 +265,8 @@ function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDele
           </Card>
         </div>
       )}
+        </div>
+      </div>
     </Card>
   );
 }
@@ -266,6 +278,10 @@ export default function AllPlans() {
   const [checking, setChecking] = useState(true);
   const [filterSite, setFilterSite] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [selectedPlans, setSelectedPlans] = useState<Set<string>>(new Set());
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmails, setShareEmails] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -326,6 +342,67 @@ export default function AllPlans() {
         }
       })
       .catch(() => {});
+  };
+
+  const togglePlanSelection = (id: string) => {
+    setSelectedPlans(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAllPlans = () => {
+    setSelectedPlans(new Set(allPlans.map(p => p.id)));
+  };
+
+  const deselectAllPlans = () => {
+    setSelectedPlans(new Set());
+  };
+
+  const handleShare = () => {
+    if (selectedPlans.size === 0) {
+      alert("Please select at least one plan to share");
+      return;
+    }
+    setShowShareModal(true);
+  };
+
+  const submitShare = () => {
+    const emails = shareEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
+    if (emails.length === 0) {
+      alert("Please enter valid email addresses separated by commas");
+      return;
+    }
+    
+    const plansToShare = allPlans.filter(p => selectedPlans.has(p.id));
+    
+    setSharing(true);
+    fetch("/api/site-actions/plans/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plans: plansToShare, emails }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setSharing(false);
+        if (data.success) {
+          alert(`Shared ${plansToShare.length} plan(s) to ${emails.length} recipient(s)`);
+          setShowShareModal(false);
+          setShareEmails("");
+          setSelectedPlans(new Set());
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      })
+      .catch(() => {
+        setSharing(false);
+        alert("Failed to share plans");
+      });
   };
 
   const isAdmin = user?.role === "admin";
@@ -415,8 +492,13 @@ export default function AllPlans() {
       </Card>
 
       {/* Plans List */}
-      <div className="mb-4">
-        <span className="text-muted-foreground">{allPlans.length} plan{allPlans.length !== 1 ? "s" : ""}</span>
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-muted-foreground">{allPlans.length} plan{allPlans.length !== 1 ? "s" : ""} ({selectedPlans.size} selected)</span>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={selectAllPlans}>Select All</Button>
+          <Button size="sm" variant="outline" onClick={deselectAllPlans}>Deselect All</Button>
+          <Button size="sm" onClick={handleShare} disabled={selectedPlans.size === 0}>Share Selected ({selectedPlans.size})</Button>
+        </div>
       </div>
 
       {loading ? (
@@ -435,8 +517,42 @@ export default function AllPlans() {
               plan={plan} 
               onDelete={handleDeletePlan} 
               onUpdate={handleUpdatePlan}
+              selected={selectedPlans.has(plan.id)}
+              onToggle={() => togglePlanSelection(plan.id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !sharing && setShowShareModal(false)}>
+          <Card className="max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle>Share Action Plans</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Share {selectedPlans.size} selected plan{selectedPlans.size !== 1 ? "s" : ""} via email.
+              </p>
+              <div>
+                <label className="text-sm block mb-2">Recipient emails (comma-separated):</label>
+                <textarea
+                  value={shareEmails}
+                  onChange={(e) => setShareEmails(e.target.value)}
+                  placeholder="email@example.com, another@example.com"
+                  className="w-full border rounded p-2 text-sm h-24"
+                  disabled={sharing}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowShareModal(false)} disabled={sharing}>Cancel</Button>
+                <Button onClick={submitShare} disabled={sharing}>
+                  {sharing ? "Sending..." : "Send"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
