@@ -100,14 +100,14 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <div className="flex flex-col gap-1 flex-shrink-0">
               <div className="flex items-center gap-2">
                 {renderStars(fb.rating)}
                 <FeedbackHeatmap fb={fb} />
                 {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
               {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-                <p className="text-[10px] text-muted-foreground italic max-w-[150px] truncate">
+                <p className="text-[10px] text-muted-foreground italic text-left max-w-full truncate" title={fb.cached_ai_summary || "Summary unavailable"}>
                   {fb.cached_ai_summary ? `💡 ${fb.cached_ai_summary}` : "💡 Summary unavailable"}
                 </p>
               )}
@@ -289,15 +289,24 @@ export default function Home() {
             {canSeeFeedback ? "See what people are saying" : "Submit and track your feedback"}
           </p>
         </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Button variant="outline" onClick={regenerateAllSummaries} disabled={regenerating}>
-              {regenerating ? "Regenerating..." : "Regenerate All Summaries"}
-            </Button>
-          )}
+        <div className="flex gap-2 flex-wrap">
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
           {isAdmin && <a href="/admin"><Button variant="outline">Admin</Button></a>}
         </div>
+        {isAdmin && (
+          <Button 
+            variant="outline" 
+            className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
+            onClick={() => {
+              if (confirm("Regenerate all AI summaries? This will overwrite existing summaries.")) {
+                regenerateAllSummaries();
+              }
+            }}
+            disabled={regenerating}
+          >
+            {regenerating ? "Regenerating..." : "Regenerate All Summaries"}
+          </Button>
+        )}
       </div>
 
       {loading ? (
