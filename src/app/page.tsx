@@ -189,7 +189,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
               const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
               try { qa = JSON.parse(aiText); } catch {}
             }
-            if (!Array.isArray(qa) || qa.length === 0) return null;
+            if (!Array.isArray(qa) || qa.length === 0) return <p className="text-xs text-muted-foreground border-t border-border pt-2">No AI follow-ups</p>;
             return (
               <div className="border-t border-border pt-3 space-y-3">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">AI Follow-up Answers</p>
@@ -205,7 +205,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 })}
               </div>
             );
-          })() : null}
+          })() : <p className="text-xs text-muted-foreground border-t border-border pt-2">No AI follow-ups</p>}
         </CardContent>
       )}
     </Card>
