@@ -588,6 +588,9 @@ export default function AllPlans() {
                     className="flex-1 bg-muted border rounded px-2 py-1 text-sm"
                   />
                   <Button size="sm" onClick={handleCopyLink}>Copy</Button>
+                  {'shareLink' in navigator && typeof navigator.share === 'function' && (
+                    <Button size="sm" variant="outline" onClick={() => navigator.share({ title: 'Action Plans', url: shareLink })}>Share</Button>
+                  )}
                 </div>
               </div>
               
