@@ -234,12 +234,19 @@ export default function Home() {
     fetch("/api/feedback")
       .then(res => res.json())
       .then(async (data) => {
-        setAllFeedback(data.feedback || []);
+        const feedbackList = data.feedback || [];
+        setAllFeedback(feedbackList);
         setLoading(false);
         
-        // Trigger background generation for feedback without summaries
-        if (data.feedback?.length > 0) {
-          fetch("/api/feedback/generate-summaries", { method: "POST" });
+        // Check how many need summaries
+        const needSummaries = feedbackList.filter((fb: any) => !fb.cached_ai_summary).length;
+        if (needSummaries > 0) {
+          console.log(`[Feedback] ${needSummaries} items need AI summaries, triggering generation...`);
+          // Trigger background generation for feedback without summaries
+          fetch("/api/feedback/generate-summaries", { method: "POST" })
+            .then(res => res.json())
+            .then(result => console.log("[Feedback] Summary generation result:", result))
+            .catch(err => console.error("[Feedback] Summary generation error:", err));
         }
       });
   };
