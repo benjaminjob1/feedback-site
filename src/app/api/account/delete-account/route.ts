@@ -18,14 +18,14 @@ export async function DELETE(req: NextRequest) {
     .from("profiles")
     .select("id, email")
     .eq("email", userEmail)
-    .single();
+    .single() as { data: { id: string; email: string } | null };
 
   // If delete_feedback is true, delete all feedback for this user first
   if (delete_feedback && profile) {
     await supabaseAdmin
       .from("feedback")
       .delete()
-      .eq("submitted_by", profile.id); // Use profile ID to find feedback
+      .eq("submitted_by", profile.id);
   }
 
   // Delete notification preferences
