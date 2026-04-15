@@ -4,11 +4,12 @@ import { verifySessionToken } from "@/lib/auth-server";
 
 // Generate a short AI summary for feedback
 async function generateFeedbackSummary(feedback: any, apiKey: string): Promise<string | null> {
-  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other } = feedback;
+  const { site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, ai_questions } = feedback;
   
   const ratingText = rating ? `${rating}/5 stars` : "No rating";
   const siteText = site || "Unknown site";
   
+  // Build context with slider scores
   const sliderScores = [];
   if (question_easy) sliderScores.push(`Ease: ${question_easy}/10`);
   if (question_improve) sliderScores.push(`Design: ${question_improve}/10`);
@@ -16,7 +17,26 @@ async function generateFeedbackSummary(feedback: any, apiKey: string): Promise<s
   if (question_features) sliderScores.push(`Features: ${question_features}/10`);
   if (question_bugs_slider) sliderScores.push(`No bugs: ${question_bugs_slider}/10`);
   
-  const context = `Site: ${siteText}, Rating: ${ratingText}${sliderScores.length > 0 ? ", Scores: " + sliderScores.join(", ") : ""}${question_other ? ", Comment: " + question_other.substring(0, 200) : ""}`;
+  let context = `Site: ${siteText}, Rating: ${ratingText}`;
+  if (sliderScores.length > 0) context += `, Scores: ${sliderScores.join(", ")}`;
+  if (question_other) context += `, Comments: ${question_other.substring(0, 300)}`;
+  
+  // Add AI follow-up Q&A if present
+  if (ai_questions) {
+    try {
+      const qa = JSON.parse(ai_questions);
+      if (typeof qa === 'object' && !Array.isArray(qa)) {
+        const qaEntries = Object.entries(qa).slice(0, 3); // Limit to 3 Q&A pairs
+        if (qaEntries.length > 0) {
+          context += `, AI Follow-ups: `;
+          qaEntries.forEach(([q, a]) => {
+            context += `Q: ${q.substring(0, 100)} A: ${String(a).substring(0, 100)}. `;
+          });
+        }
+      }
+    } catch {}
+  }
+  
   const prompt = `Summarize this feedback in 2-3 short sentences max: "${context}". Be very brief.`;
 
   try {
@@ -73,7 +93,7 @@ export async function POST(req: NextRequest) {
   // Get all feedback without summaries
   const { data: feedbackWithoutSummaries, error } = await supabaseAdmin
     .from("feedback")
-    .select("id, site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other")
+    .select("id, site, rating, question_easy, question_improve, question_bugs, question_features, question_bugs_slider, question_other, ai_questions")
     .is("cached_ai_summary", null);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -90,7 +90,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
         className="w-full text-left"
       >
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-xl flex-shrink-0">{siteEmoji(fb.site)}</span>
               <div className="min-w-0">
@@ -98,17 +98,19 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 <p className="text-xs text-muted-foreground">
                   {fb.profiles?.full_name || fb.profiles?.email || "Anonymous"} • {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </p>
-                {fb.cached_ai_summary ? (
-                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 {fb.cached_ai_summary}</p>
-                ) : fb.ai_questions ? (
-                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 Summary unavailable</p>
-                ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {renderStars(fb.rating)}
-              <FeedbackHeatmap fb={fb} />
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                {renderStars(fb.rating)}
+                <FeedbackHeatmap fb={fb} />
+                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+              {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
+                <p className="text-[10px] text-muted-foreground italic max-w-[150px] truncate">
+                  {fb.cached_ai_summary ? `💡 ${fb.cached_ai_summary}` : "💡 Summary unavailable"}
+                </p>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -217,6 +219,7 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [allFeedback, setAllFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -256,9 +259,26 @@ export default function Home() {
       });
   };
 
+  const regenerateAllSummaries = () => {
+    setRegenerating(true);
+    fetch("/api/feedback/generate-summaries", { method: "POST" })
+      .then(res => res.json())
+      .then(result => {
+        // Refresh feedback to show new summaries
+        fetch("/api/feedback")
+          .then(res => res.json())
+          .then(data => {
+            setAllFeedback(data.feedback || []);
+            setRegenerating(false);
+          });
+      })
+      .catch(() => setRegenerating(false));
+  };
+
   const canSeeFeedback = user?.role === "admin" || user?.role === "viewer";
   const isAdmin = user?.role === "admin";
   const isViewer = user?.role === "viewer";
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -270,6 +290,11 @@ export default function Home() {
           </p>
         </div>
         <div className="flex gap-2">
+          {isAdmin && (
+            <Button variant="outline" onClick={regenerateAllSummaries} disabled={regenerating}>
+              {regenerating ? "Regenerating..." : "Regenerate All Summaries"}
+            </Button>
+          )}
           <a href="/submit"><Button>Submit / Edit Feedback</Button></a>
           {isAdmin && <a href="/admin"><Button variant="outline">Admin</Button></a>}
         </div>
