@@ -5,7 +5,7 @@ import { SITES } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Zap, Trash2, AlertTriangle, CheckCircle, List, Square, CheckSquare } from "lucide-react";
 
 type Feedback = {
   id: string;
@@ -76,7 +76,7 @@ function FeedbackHeatmap({ fb }: { fb: Feedback }) {
   );
 }
 
-function FeedbackCard({ fb }: { fb: Feedback }) {
+function FeedbackCard({ fb, selected, onToggle }: { fb: Feedback; selected: boolean; onToggle: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [sliderComments, setSliderComments] = useState<Record<string, string>>({});
 
@@ -103,14 +103,24 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
   );
 
   return (
-    <Card className="bg-card/80 overflow-hidden">
+    <Card className={`bg-card/80 overflow-hidden transition-colors ${selected ? "border-primary border-2" : ""}`}>
       <button 
         onClick={() => setExpanded(!expanded)}
         className="w-full text-left"
       >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-3">
+            {/* Checkbox + Left side */}
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className={`flex-shrink-0 p-1 rounded ${selected ? "text-primary" : "text-muted-foreground"}`}
+              >
+                {selected ? <CheckSquare size={18} /> : <Square size={18} />}
+              </button>
               <span className="text-xl">{siteEmoji(fb.site)}</span>
               <div className="min-w-0">
                 <CardTitle className="text-sm truncate">{SITES.find(s => s.value === fb.site)?.label || fb.site}</CardTitle>
@@ -223,8 +233,11 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
   );
 }
 
-function ActionPlanCard({ plan, onDelete }: { plan: ActionPlan; onDelete: (id: string) => void }) {
+function ActionPlanCard({ plan, onDelete, onUpdate }: { plan: ActionPlan; onDelete: (id: string) => void; onUpdate: (id: string, status: string, priority: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editStatus, setEditStatus] = useState(plan.status);
+  const [editPriority, setEditPriority] = useState(plan.priority);
   
   let issues: string[] = [];
   let actionItems: string[] = [];
@@ -242,6 +255,11 @@ function ActionPlanCard({ plan, onDelete }: { plan: ActionPlan; onDelete: (id: s
     in_progress: <Zap size={12} className="mr-1" />,
     completed: <CheckCircle size={12} className="mr-1" />,
     dismissed: <AlertTriangle size={12} className="mr-1" />,
+  };
+
+  const handleSave = () => {
+    onUpdate(plan.id, editStatus, editPriority);
+    setEditing(false);
   };
 
   return (
@@ -303,21 +321,68 @@ function ActionPlanCard({ plan, onDelete }: { plan: ActionPlan; onDelete: (id: s
             </ul>
           </div>
 
-          <div className="pt-2 border-t border-border">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm("Delete this action plan?")) {
-                  onDelete(plan.id);
-                }
-              }}
-              className="flex items-center gap-1"
-            >
-              <Trash2 size={12} /> Delete Plan
-            </Button>
-          </div>
+          {/* Edit Form */}
+          {editing ? (
+            <div className="border-t border-border pt-4 space-y-3">
+              <div className="flex gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Priority</label>
+                  <select
+                    value={editPriority}
+                    onChange={(e) => setEditPriority(e.target.value)}
+                    className="bg-background border rounded px-2 py-1 text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="bg-background border rounded px-2 py-1 text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="dismissed">Dismissed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSave(); }}>Save</Button>
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditing(false); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-border flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+              >
+                Edit Status/Priority
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm("Delete this action plan?")) {
+                    onDelete(plan.id);
+                  }
+                }}
+                className="flex items-center gap-1"
+              >
+                <Trash2 size={12} /> Delete
+              </Button>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
@@ -328,6 +393,7 @@ export default function SiteActions() {
   const [user, setUser] = useState<any>(null);
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [siteFeedback, setSiteFeedback] = useState<Feedback[]>([]);
+  const [selectedFeedback, setSelectedFeedback] = useState<Set<string>>(new Set());
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -347,7 +413,10 @@ export default function SiteActions() {
     fetch(`/api/feedback?site=${site}`)
       .then(res => res.json())
       .then(data => {
-        setSiteFeedback(data.feedback || []);
+        const feedback = data.feedback || [];
+        setSiteFeedback(feedback);
+        // Select all by default
+        setSelectedFeedback(new Set(feedback.map((fb: Feedback) => fb.id)));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -369,19 +438,50 @@ export default function SiteActions() {
       fetchActionPlans(site);
     } else {
       setSiteFeedback([]);
+      setSelectedFeedback(new Set());
       setActionPlans([]);
     }
   };
 
-  const handleAnalyze = () => {
+  const toggleFeedback = (id: string) => {
+    setSelectedFeedback(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedFeedback(new Set(siteFeedback.map(fb => fb.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedFeedback(new Set());
+  };
+
+  const handleAnalyze = (selectedOnly: boolean = true) => {
     if (!selectedSite) return;
-    if (!confirm(`Analyze all approved feedback for ${SITES.find(s => s.value === selectedSite)?.label} and generate an action plan?`)) return;
+    
+    const feedbackIds = selectedOnly ? Array.from(selectedFeedback) : [];
+    const feedbackCount = selectedOnly ? selectedFeedback.size : siteFeedback.length;
+    
+    if (feedbackCount === 0) {
+      alert("No feedback selected");
+      return;
+    }
+
+    const siteName = SITES.find(s => s.value === selectedSite)?.label;
+    if (!confirm(`Analyze ${feedbackCount} feedback item${feedbackCount !== 1 ? "s" : ""} for ${siteName}${selectedOnly ? " (selected only)" : ""} and generate an action plan?`)) return;
 
     setAnalyzing(true);
     fetch("/api/site-actions/plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ site: selectedSite }),
+      body: JSON.stringify({ site: selectedSite, feedbackIds }),
     })
       .then(res => res.json())
       .then(data => {
@@ -404,6 +504,21 @@ export default function SiteActions() {
       .then(data => {
         if (data.success) {
           setActionPlans(prev => prev.filter(p => p.id !== id));
+        }
+      })
+      .catch(() => {});
+  };
+
+  const handleUpdatePlan = (id: string, status: string, priority: string) => {
+    fetch("/api/site-actions/plans", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, priority }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.plan) {
+          setActionPlans(prev => prev.map(p => p.id === id ? { ...p, status, priority } : p));
         }
       })
       .catch(() => {});
@@ -432,9 +547,16 @@ export default function SiteActions() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Site Actions</h1>
-        <p className="text-muted-foreground">View feedback and create AI action plans by site</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Site Actions</h1>
+          <p className="text-muted-foreground">View feedback and create AI action plans by site</p>
+        </div>
+        <a href="/all-plans">
+          <Button variant="outline" className="flex items-center gap-2">
+            <List size={14} /> All Action Plans
+          </Button>
+        </a>
       </div>
 
       {/* Site Selector */}
@@ -472,15 +594,15 @@ export default function SiteActions() {
                 <span className="text-muted-foreground">({actionPlans.length})</span>
               </div>
               <Button
-                onClick={handleAnalyze}
-                disabled={analyzing}
+                onClick={() => handleAnalyze(true)}
+                disabled={analyzing || selectedFeedback.size === 0}
                 className="flex items-center gap-2"
               >
                 {analyzing ? (
                   <>Analyzing...</>
                 ) : (
                   <>
-                    <Zap size={14} /> Analyze & Create Plan
+                    <Zap size={14} /> Analyze Selected ({selectedFeedback.size})
                   </>
                 )}
               </Button>
@@ -489,13 +611,13 @@ export default function SiteActions() {
             {actionPlans.length === 0 ? (
               <Card className="bg-muted/20">
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  No action plans yet. Click &ldquo;Analyze & Create Plan&rdquo; to generate one from feedback.
+                  No action plans yet. Select feedback and click &ldquo;Analyze Selected&rdquo; to generate one.
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
                 {actionPlans.map(plan => (
-                  <ActionPlanCard key={plan.id} plan={plan} onDelete={handleDeletePlan} />
+                  <ActionPlanCard key={plan.id} plan={plan} onDelete={handleDeletePlan} onUpdate={handleUpdatePlan} />
                 ))}
               </div>
             )}
@@ -504,10 +626,30 @@ export default function SiteActions() {
           {/* Feedback Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">
-                {SITES.find(s => s.value === selectedSite)?.emoji} {SITES.find(s => s.value === selectedSite)?.label} Feedback
-              </h2>
-              <span className="text-muted-foreground">{siteFeedback.length} item{siteFeedback.length !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">
+                  {SITES.find(s => s.value === selectedSite)?.emoji} {SITES.find(s => s.value === selectedSite)?.label} Feedback
+                </h2>
+                <span className="text-muted-foreground">
+                  {selectedFeedback.size}/{siteFeedback.length} selected
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={selectAll}>
+                  Select All
+                </Button>
+                <Button size="sm" variant="outline" onClick={deselectAll}>
+                  Deselect All
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAnalyze(false)}
+                  disabled={analyzing || siteFeedback.length === 0}
+                >
+                  Analyze All ({siteFeedback.length})
+                </Button>
+              </div>
             </div>
 
             {loading ? (
@@ -519,7 +661,12 @@ export default function SiteActions() {
             ) : (
               <div className="space-y-3">
                 {siteFeedback.map(fb => (
-                  <FeedbackCard key={fb.id} fb={fb} />
+                  <FeedbackCard 
+                    key={fb.id} 
+                    fb={fb} 
+                    selected={selectedFeedback.has(fb.id)}
+                    onToggle={() => toggleFeedback(fb.id)}
+                  />
                 ))}
               </div>
             )}

@@ -58,20 +58,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  const { site } = await req.json();
+  const { site, feedbackIds } = await req.json();
   if (!site) return NextResponse.json({ error: "Site is required" }, { status: 400 });
 
-  // Fetch all feedback for this site
-  const { data: feedback, error: fbError } = await supabaseAdmin
+  // Fetch feedback - either specific IDs or all approved for site
+  let feedbackQuery = supabaseAdmin
     .from("feedback")
     .select("*")
     .eq("site", site)
     .eq("status", "approved");
 
+  if (feedbackIds && feedbackIds.length > 0) {
+    feedbackQuery = feedbackQuery.in("id", feedbackIds);
+  }
+
+  const { data: feedback, error: fbError } = await feedbackQuery;
+
   if (fbError) return NextResponse.json({ error: fbError.message }, { status: 500 });
 
   if (!feedback || feedback.length === 0) {
-    return NextResponse.json({ error: "No approved feedback for this site" }, { status: 400 });
+    return NextResponse.json({ error: "No approved feedback to analyze" }, { status: 400 });
   }
 
   // Build context from feedback
@@ -155,7 +161,6 @@ Only include issues that are actually mentioned in the feedback. Be specific and
     // Parse AI response
     let analysis;
     try {
-      // Try to extract JSON from response
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0]);
@@ -172,7 +177,7 @@ Only include issues that are actually mentioned in the feedback. Be specific and
       return NextResponse.json({ error: "Incomplete AI response" }, { status: 500 });
     }
 
-    // Save action plan
+    // Save action plan with feedback IDs used
     const { data: plan, error: insertError } = await supabaseAdmin
       .from("action_plans")
       .insert({
@@ -189,11 +194,49 @@ Only include issues that are actually mentioned in the feedback. Be specific and
 
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
 
-    return NextResponse.json({ plan, analyzed: feedback.length });
+    return NextResponse.json({ plan, analyzed: feedback.length, feedbackCount: feedback.length });
   } catch (err: any) {
     console.error("[action-plans] Error:", err);
     return NextResponse.json({ error: err.message || "Analysis failed" }, { status: 500 });
   }
+}
+
+// PATCH - Update action plan (status, priority)
+export async function PATCH(req: NextRequest) {
+  const token = req.cookies.get("fb_session")?.value;
+  if (!token) return NextResponse.json({ error: "Login required" }, { status: 401 });
+
+  const payload = await verifySessionToken(token);
+  if (!payload) return NextResponse.json({ error: "Login required" }, { status: 401 });
+
+  // Verify admin
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("email", payload.email.toLowerCase())
+    .single();
+
+  if (profile?.role !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  const { id, status, priority } = await req.json();
+  if (!id) return NextResponse.json({ error: "Plan ID required" }, { status: 400 });
+
+  const updates: any = { updated_at: new Date().toISOString() };
+  if (status) updates.status = status;
+  if (priority) updates.priority = priority;
+
+  const { data, error } = await supabaseAdmin
+    .from("action_plans")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ plan: data });
 }
 
 // DELETE - Remove an action plan
