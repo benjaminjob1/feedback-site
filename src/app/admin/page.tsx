@@ -408,30 +408,29 @@ export default function AdminPage() {
                     ) : null;
                   })()}
 
-                  {(fb.ai_questions || (fb.question_other && fb.question_other.includes("[AI Follow-ups]"))) ? (() => {
-                    let qa: any[] = [];
-                    if (fb.ai_questions) {
-                      try { qa = JSON.parse(fb.ai_questions); } catch {}
-                    }
-                    if ((!qa || qa.length === 0) && fb.question_other && fb.question_other.includes("[AI Follow-ups]")) {
-                      const aiIdx = fb.question_other.indexOf("[AI Follow-ups]");
-                      const aiText = fb.question_other.substring(aiIdx + "[AI Follow-ups]".length).trim();
-                      try { qa = JSON.parse(aiText); } catch {}
-                    }
-                    if (!Array.isArray(qa) || qa.length === 0) return null;
+                  {fb.ai_questions ? (() => {
+                    let qaArray: {question: string; answer: string}[] = [];
+                    try {
+                      const parsed = JSON.parse(fb.ai_questions);
+                      // ai_questions is stored as {"question": "answer"} not [{"question":"...","answer":"..."}]
+                      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        Object.entries(parsed).forEach(([q, a]) => {
+                          qaArray.push({ question: q, answer: String(a) });
+                        });
+                      } else if (Array.isArray(parsed)) {
+                        qaArray = parsed;
+                      }
+                    } catch {}
+                    if (qaArray.length === 0) return null;
                     return (
                       <div className="border-t border-border pt-3 space-y-3">
                         <p className="text-muted-foreground text-xs uppercase tracking-wide">AI FOLLOW-UP ANSWERS</p>
-                        {qa.map((item, i) => {
-                          const question = item.question || Object.keys(item)[0];
-                          const answer = item.answer || item[question] || "";
-                          return (
-                            <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
-                              <p className="text-xs font-medium text-foreground">{question || String(i)}</p>
-                              <p className="text-sm text-muted-foreground">{answer}</p>
-                            </div>
-                          );
-                        })}
+                        {qaArray.map((item, i) => (
+                          <div key={i} className="bg-muted/30 rounded-md p-3 space-y-1">
+                            <p className="text-xs font-medium text-foreground">{item.question}</p>
+                            <p className="text-sm text-muted-foreground">{item.answer}</p>
+                          </div>
+                        ))}
                       </div>
                     );
                   })() : null}
