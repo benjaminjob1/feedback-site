@@ -240,7 +240,16 @@ export default function Home() {
         // Trigger background generation for feedback without summaries
         const needSummaries = feedbackList.filter((fb: any) => !fb.cached_ai_summary).length;
         if (needSummaries > 0) {
-          fetch("/api/feedback/generate-summaries", { method: "POST" });
+          // Call generate API
+          fetch("/api/feedback/generate-summaries", { method: "POST" })
+            .then(res => res.json())
+            .then(result => {
+              // Refresh feedback after generation
+              fetch("/api/feedback")
+                .then(res => res.json())
+                .then(data => setAllFeedback(data.feedback || []));
+            })
+            .catch(() => {});
         }
       });
   };
