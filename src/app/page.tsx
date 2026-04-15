@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { supabase, SITES, SiteValue } from "@/lib/supabase";
+import { SITES, SiteValue } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -185,41 +185,25 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setLoading(false);
-        return;
-      }
-
-      const userId = session.user.id;
-      supabase
-        .from("profiles")
-        .select("id, full_name, role, email")
-        .eq("id", userId)
-        .single()
-        .then(({ data }) => {
-          setUser(data);
-          fetchFeedback(data);
-        });
-    });
+    fetch("/api/auth/session")
+      .then(res => res.json())
+      .then(data => {
+        setUser(data.user || null);
+        if (data.user) {
+          fetchFeedback(data.user);
+        } else {
+          setLoading(false);
+        }
+      });
   }, []);
 
   const fetchFeedback = (profile: any) => {
-    let query = supabase
-      .from("feedback")
-      .select("*, profiles(full_name, email)")
-      .order("created_at", { ascending: false });
-
-    if (profile?.role === "user") {
-      query = query.eq("submitted_by", profile.id);
-    } else if (profile?.role === "viewer") {
-      query = query.or(`status.eq.approved,submitted_by.eq.${profile.id}`);
-    }
-
-    query.then(({ data }) => {
-      setAllFeedback((data as any) || []);
-      setLoading(false);
-    });
+    fetch("/api/feedback")
+      .then(res => res.json())
+      .then(data => {
+        setAllFeedback(data.feedback || []);
+        setLoading(false);
+      });
   };
 
   const canSeeFeedback = user?.role === "admin" || user?.role === "viewer";
