@@ -110,16 +110,16 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
             </div>
           </div>
 
-          {/* Date + AI summary row */}
-          <div className="flex items-center justify-between gap-2 mt-1">
-            <p className="text-xs text-muted-foreground">
-              {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-            </p>
+          {/* AI summary + date row */}
+          <div className="mt-1">
             {(fb.cached_ai_summary || (fb.ai_questions && !fb.cached_ai_summary)) && (
-              <p className="text-[10px] text-muted-foreground italic truncate max-w-[60%]" title={fb.cached_ai_summary || "Summary unavailable"}>
+              <p className="text-[10px] text-muted-foreground italic" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 💡 {fb.cached_ai_summary ? fb.cached_ai_summary : "Summary unavailable"}
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              {new Date(fb.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+            </p>
           </div>
         </CardHeader>
       </button>
