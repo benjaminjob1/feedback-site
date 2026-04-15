@@ -202,7 +202,7 @@ export default function AllPlans() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(true);
   const [filterSite, setFilterSite] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -228,8 +228,9 @@ export default function AllPlans() {
       .then(res => res.json())
       .then(data => {
         let plans = data.plans || [];
-        if (filterStatus) {
-          plans = plans.filter((p: ActionPlan) => p.status === filterStatus);
+        // Filter by multiple statuses
+        if (filterStatus.length > 0) {
+          plans = plans.filter((p: ActionPlan) => filterStatus.includes(p.status));
         }
         setAllPlans(plans);
         setLoading(false);
@@ -299,7 +300,7 @@ export default function AllPlans() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="py-4">
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-wrap gap-6 items-start">
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground">Site:</label>
               <select
@@ -315,21 +316,27 @@ export default function AllPlans() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground">Status:</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                }}
-                className="bg-background border rounded px-2 py-1 text-sm"
-              >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="dismissed">Dismissed</option>
-              </select>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-2">Status:</label>
+              <div className="flex flex-wrap gap-3">
+                {["pending", "in_progress", "completed", "dismissed"].map(status => (
+                  <label key={status} className="flex items-center gap-1 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterStatus.includes(status)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilterStatus([...filterStatus, status]);
+                        } else {
+                          setFilterStatus(filterStatus.filter(s => s !== status));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    {status.replace("_", " ")}
+                  </label>
+                ))}
+              </div>
             </div>
             <Button size="sm" onClick={fetchPlans}>Apply Filters</Button>
           </div>
