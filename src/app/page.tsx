@@ -101,7 +101,7 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
                 {fb.cached_ai_summary ? (
                   <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 {fb.cached_ai_summary}</p>
                 ) : fb.ai_questions ? (
-                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 Generating summary...</p>
+                  <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">💡 Summary unavailable</p>
                 ) : null}
               </div>
             </div>

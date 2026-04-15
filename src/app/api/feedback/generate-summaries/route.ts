@@ -31,7 +31,7 @@ async function generateFeedbackSummary(feedback: any, apiKey: string): Promise<s
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-7-latest",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 150,
         messages: [{ role: "user", content: prompt }]
       }),
@@ -41,13 +41,18 @@ async function generateFeedbackSummary(feedback: any, apiKey: string): Promise<s
     clearTimeout(timeout);
     
     if (!res.ok) {
-      const errText = await res.text();
-      console.error("[generate-summaries] API error:", res.status, errText);
+      console.error("[generate-summaries] API error:", res.status);
       return null;
     }
     
     const data = await res.json();
-    const summary = data.content?.[0]?.text?.trim();
+    const rawContent = (data as any).content;
+    let summary = "";
+    if (Array.isArray(rawContent)) {
+      summary = rawContent.map((block: any) => block.text ?? "").join("").trim();
+    } else if (typeof rawContent === 'string') {
+      summary = rawContent;
+    }
     return summary || null;
   } catch (err) {
     console.error("[generate-summaries] Error:", err);
