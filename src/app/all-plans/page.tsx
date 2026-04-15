@@ -264,7 +264,7 @@ export default function AllPlans() {
   const [allPlans, setAllPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(true);
-  const [filterSite, setFilterSite] = useState<string>("");
+  const [filterSite, setFilterSite] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
 
   useEffect(() => {
@@ -284,16 +284,17 @@ export default function AllPlans() {
 
   const fetchPlans = () => {
     setLoading(true);
-    let url = "/api/site-actions/plans";
-    if (filterSite) url += `?site=${filterSite}`;
-    
-    fetch(url)
+    fetch("/api/site-actions/plans")
       .then(res => res.json())
       .then(data => {
         let plans = data.plans || [];
         // Filter by multiple statuses
         if (filterStatus.length > 0) {
           plans = plans.filter((p: ActionPlan) => filterStatus.includes(p.status));
+        }
+        // Filter by multiple sites
+        if (filterSite.length > 0) {
+          plans = plans.filter((p: ActionPlan) => filterSite.includes(p.site));
         }
         setAllPlans(plans);
         setLoading(false);
@@ -364,20 +365,27 @@ export default function AllPlans() {
       <Card className="mb-6">
         <CardContent className="py-4">
           <div className="flex flex-wrap gap-6 items-start">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground">Site:</label>
-              <select
-                value={filterSite}
-                onChange={(e) => {
-                  setFilterSite(e.target.value);
-                }}
-                className="bg-background border rounded px-2 py-1 text-sm"
-              >
-                <option value="">All Sites</option>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-2">Site:</label>
+              <div className="flex flex-wrap gap-3">
                 {SITES.map(site => (
-                  <option key={site.value} value={site.value}>{site.emoji} {site.label}</option>
+                  <label key={site.value} className="flex items-center gap-1 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterSite.includes(site.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilterSite([...filterSite, site.value]);
+                        } else {
+                          setFilterSite(filterSite.filter(s => s !== site.value));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    {site.emoji} {site.label}
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
             <div>
               <label className="text-sm text-muted-foreground block mb-2">Status:</label>
