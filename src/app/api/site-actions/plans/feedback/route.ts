@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("feedback")
-    .select(\"id, site, rating, question_other, cached_ai_summary, created_at, profiles(full_name, email)\")
-    .in(\"id\", feedbackIds);
+    .select("id, site, rating, question_other, cached_ai_summary, created_at, profiles(full_name, email)")
+    .in("id", feedbackIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
