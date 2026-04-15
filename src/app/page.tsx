@@ -200,9 +200,14 @@ export default function Home() {
   const fetchFeedback = (profile: any) => {
     fetch("/api/feedback")
       .then(res => res.json())
-      .then(data => {
+      .then(async (data) => {
         setAllFeedback(data.feedback || []);
         setLoading(false);
+        
+        // Trigger background generation for feedback without summaries
+        if (data.feedback?.length > 0) {
+          fetch("/api/feedback/generate-summaries", { method: "POST" });
+        }
       });
   };
 
