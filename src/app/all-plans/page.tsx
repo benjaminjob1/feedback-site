@@ -589,7 +589,7 @@ export default function AllPlans() {
                   />
                   <Button size="sm" onClick={handleCopyLink}>Copy</Button>
                   {typeof window !== 'undefined' && typeof navigator.share === 'function' && (
-                    <Button size="sm" variant="outline" onClick={() => navigator.share({ title: 'Action Plans', url: shareLink })}>Share</Button>
+                    <Button size="sm" variant="outline" onClick={() => navigator.share({ title: 'Action Plans for Review', text: `Action Plans for review: ${shareLink}`, url: shareLink })}>Share</Button>
                   )}
                 </div>
               </div>
