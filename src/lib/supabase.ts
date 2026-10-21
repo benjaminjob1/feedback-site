@@ -1,19 +1,27 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Build-time constants — hardcoded so they're always available during build
-const FALLBACK_URL = "https://lvrltmuhqejoetxubvxu.supabase.co";
-const FALLBACK_KEY = "sb_publishable_vyqYqzXyx_2bHVzHJDBEgw_x3dARXaI";
-
-// Runtime env overrides (for local development), falling back to hardcoded values
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
+// Supabase API keys (new key model):
+// - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_... (browser-safe, RLS applies)
+// - SUPABASE_SECRET_KEY: sb_secret_... (server only, see src/lib/supabase-admin.ts)
+// Values come from environment variables only; nothing is hardcoded.
+// NEXT_PUBLIC_* values must be referenced literally so Next.js can inline them at build time.
+// TEMPORARY: the legacy variable name NEXT_PUBLIC_SUPABASE_ANON_KEY is still read as a fallback so
+// existing deployments keep working until the new variable is set in Vercel. Remove it afterwards.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Lazy singleton — only created when first accessed (avoids build-time errors)
 let _supabase: ReturnType<typeof createClient> | null = null;
 
 function getSupabase() {
   if (!_supabase) {
-    _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      throw new Error(
+        "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+      );
+    }
+    _supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   }
   return _supabase;
 }
